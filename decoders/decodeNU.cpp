@@ -38,10 +38,49 @@ int main(int argc, char* argv[]) {
     {"0000001", 3}
   };
 
+  // --- MODIFICATION START ---
+
+  // 1. Check if an input file was provided on the command line
+  if (argc < 2) {
+    cerr << "Error: No input file specified." << endl;
+    cerr << "Usage: " << argv[0] << " <input_file>" << endl;
+    return 1; // Exit with an error code
+  }
+
+  // 2. Get the input file path from the command-line arguments
+  string inputFilePath = argv[1];
+  
+  // 3. Create the output filename from the input filename
+  string outputFilePath;
+  // Find the last '.' to remove the extension
+  size_t lastDotPos = inputFilePath.rfind('.');
+  if (lastDotPos != string::npos) {
+    // Get the base name without the extension
+    outputFilePath = inputFilePath.substr(0, lastDotPos);
+  } else {
+    // No extension found, use the whole name
+    outputFilePath = inputFilePath;
+  }
+  // Append the new suffix
+  outputFilePath += "_waveform.txt";
+
   std::ifstream binFile;
-  binFile.open("data/sbndrawbin_run-00001_2025.07.17-13.45.02_TPC_NU.dat", std::ios::binary);
+  binFile.open(inputFilePath, std::ios::binary);
+  if (!binFile.is_open()) {
+    cerr << "Error: Could not open input file '" << inputFilePath << "'" << endl;
+    return 1;
+  }
+
   std::ofstream outfile;
-  outfile.open("NU_waveforms.txt");
+  outfile.open(outputFilePath);
+  if (!outfile.is_open()) {
+    cerr << "Error: Could not open output file '" << outputFilePath << "'" << endl;
+    return 1;
+  }
+
+  cout << "Input file: " << inputFilePath << endl;
+  cout << "Output file: " << outputFilePath << endl;
+
 
   while( binFile.peek() != EOF ){
     uint32_t word32b;
