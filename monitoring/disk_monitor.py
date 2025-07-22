@@ -24,8 +24,8 @@ grafana_port = 0    # fill in your Grafana port
 grafana_timeout = 0.1
 
 # CONFIG: threshold above which to delete files
-delete_threshold_upper = 0.205   # 90% usage
-delete_threshold_lower = 0.204
+delete_threshold_upper = 0.205   # Data starts getting deleted above this threshold, 90% usage
+delete_threshold_lower = 0.204   # Data gets delected until this lower bound is achieved, 75% usage
 # CONFIG: directories to clean up if threshold exceeded
 cleanup_dirs = ['/data']
 
@@ -48,6 +48,12 @@ def get_volume_metrics(volumes):
 
         if percent_used >= delete_threshold_upper:
             print(f"[WARNING] Disk usage {percent_used*100:.1f}% exceeds threshold {delete_threshold_upper*100:.0f}% on {v}")
+
+            # In case delay between detection and actual deletion is needed
+            delete_delay = 30*60 # in seconds
+            print(f"Deleting files in {delete_delay/60} minutes")
+            time.sleep(delete_delay)
+
             cleanup_old_files(v)
 
     return '\n'.join(results) + '\n'
