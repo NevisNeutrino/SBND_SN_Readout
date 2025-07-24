@@ -1,4 +1,4 @@
-# Seokju Chung, sc5303@columbia.edu 
+# Seokju Chung, sc5303@columbia.edu
 # 2025-07-23: For now, only display warning, don't actually delete.
 
 
@@ -12,7 +12,7 @@ import socket
 
 monitor_volumes = [
     '/data',
-    # '/', 
+    # '/',
     # '/daq/software',
     # '/daq/scratch',
     # '/daq/log',
@@ -41,12 +41,13 @@ def get_volume_metrics(volumes):
         st = os.statvfs(v)
         free_space_gb = round(st.f_bavail * st.f_frsize / 1024 / 1024 / 1024, 2)
         percent_used = 1.0 - (st.f_bavail / st.f_blocks)
-        
+
         results.append("%s.%s.%s.Free_Space_GB %s %d" % (this_experiment, this_hostname, name, free_space_gb, now))
         results.append("%s.%s.%s.Percent_Used %s %d"  % (this_experiment, this_hostname, name, round(percent_used, 4), now))
 
         print(f"[INFO] Volume: {v}, Used: {percent_used*100:.1f}%, Free: {free_space_gb:.2f} GB")
         print(f"[INFO] Delete Threshold: {delete_threshold*100:.0f}%, Lower Threshold: {delete_lower_threshold*100:.0f}%")
+
         if percent_used >= delete_threshold:
             print(f"[WARNING] Disk usage {percent_used*100:.1f}% exceeds threshold {delete_threshold*100:.0f}% on {v}")
             cleanup_old_files(v)
@@ -69,12 +70,12 @@ def cleanup_old_files(volume):
                 try:
                     # os.remove(f)
                     print(f"[DELETE] Remove old file: {f}")
-                    
+
                     # Re-check disk usage
                     st = os.statvfs(volume)
                     percent_used = 1.0 - (st.f_bavail / st.f_blocks)
                     print(f"[INFO] Disk usage should be below threshold: {delete_lower_threshold*100:.1f}%, current usage: {percent_used*100:.1f}%")
- 
+
                     if percent_used < delete_lower_threshold:
                         print(f"[INFO] Disk usage dropped below threshold: {percent_used*100:.1f}%")
                         return
@@ -83,4 +84,5 @@ def cleanup_old_files(volume):
             # optional: handle directories, but be careful with recursive deletion!
 
 
-get_volume_metrics(monitor_volumes)
+metrics = get_volume_metrics(monitor_volumes)
+print(metrics)
