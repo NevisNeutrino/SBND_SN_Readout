@@ -21,19 +21,16 @@ colors = [
     '#17becf'   # blue-teal
 ]
 
-nevents = NU_data["event"].max()
-nframes = SN_data["frames"].max()
-
-for channel in range(0,64):
-    for fem in range(3,18):
-
-        for i, event in enumerate(range(1,10)):
-            NU_sample = NU_data.loc[(NU_data['channel']==channel) & (NU_data['fem']==fem) & (NU_data['event']==event)]['samp']
-            NU_adc = NU_data.loc[(NU_data['channel']==channel) & (NU_data['fem']==fem) & (NU_data['event']==event)]['adc']
-
-            plt.scatter(NU_sample, NU_adc, marker = '.', label = 'NU - Event '+str(event), color = colors[i%10])
+for channel in [0]:
+    for fem in [3]:
 
         fig = plt.figure(figsize=(10, 6))
+
+        for i, event in enumerate(range(1,3)):
+            NU_sample = NU_data.loc[(NU_data['channel']==channel) & (NU_data['fem']==fem) & (NU_data['event']==event)]['samp']
+            NU_adc = NU_data.loc[(NU_data['channel']==channel) & (NU_data['fem']==fem) & (NU_data['event']==event)]['adc']
+            plt.scatter(NU_sample, NU_adc, marker = '.', label = 'NU - Event '+str(event), color = colors[i%10])
+
         plt.title('FEM '+str(fem)+' - Ch. '+str(channel))
         plt.xlabel('Sample no.')
         plt.ylabel('ADC value')
@@ -42,8 +39,7 @@ for channel in range(0,64):
         plt.tight_layout()
         plt.legend(frameon=False)
         plt.savefig('waveformNU_fem'+str(fem)+'+_ch'+str(channel)+'.png')
-
-        SN_frame = SN_data.loc[(SN_data['channel']==channel)]['frame']
+        
         fig = plt.figure(figsize=(10, 6))
 
         for i, frame in enumerate(range(2,10)):
@@ -60,7 +56,7 @@ for channel in range(0,64):
         plt.tight_layout()
         plt.legend(frameon=False)
         plt.savefig('waveformSN_fem'+str(fem)+'+_ch'+str(channel)+'.png')
-
+        
         NU_frame = NU_data.loc[(NU_data['channel']==channel) & (NU_data['fem']==fem)]['frame']
         NU_sample = NU_data.loc[(NU_data['channel']==channel) & (NU_data['fem']==fem)]['sample']
         NU_adc = NU_data.loc[(NU_data['channel']==channel) & (NU_data['fem']==fem)]['adc']
@@ -73,17 +69,18 @@ for channel in range(0,64):
         SN_time = SN_frame * 1144 + SN_sample
         
         fig = plt.figure(figsize=(10, 6))
-        trigger = 1
+        trigger = 2
         trigger_frame = NU_data.loc[NU_data['event']==trigger]['frame'].unique()[0]
         
         plt.scatter(NU_time, NU_adc, marker = '.', label = 'NU', color = 'red')
         plt.scatter(SN_time, SN_adc, marker = '.', label = 'SN', color = 'blue')
-        
         plt.title('FEM '+str(fem)+' - Ch. '+str(channel))
         plt.xlabel('Time (Abs. Sample no.)')
         plt.ylabel('ADC value')
-        plt.xlim((trigger_frame*1144)-(2*1144),(trigger_frame*1144)+(6*1144))
+        plt.ylim(1880,2075)
+        plt.xlim((trigger_frame*1144),(trigger_frame*1144)+(4*1144))
         plt.grid(True)
         plt.tight_layout()
         plt.legend(frameon=False)
-        plt.savefig('waveformTrig_fem'+str(fem)+'+_ch'+str(hannel)+'.png')
+        plt.savefig('waveformTrig_fem'+str(fem)+'+_ch'+str(channel)+'.png')
+        
