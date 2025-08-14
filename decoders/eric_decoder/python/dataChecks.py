@@ -121,11 +121,11 @@ def getEventNumMetric(tree, eventNums, femBranches, femSlots, logFile, writeLog=
     eventNumRolloverDict = {}
     
     for branch, slot in zip(femBranches, femSlots):
-        numBranch = branch + '/' + numType
-        diffBranch = branch + '/' + numType[:-1] + 'Diff_'
+        numBranch = branch + '/eventNum_'
+        diffBranch = branch + '/eventNumDiff_'
         df[diffBranch] = df[numBranch].diff()
         
-        eventNumDiffErr = df[eventNumDiff] > eventNumDiffAllowed
+        eventNumDiffErr = df[diffBranch] > eventNumDiffAllowed
         eventNumDiffErrCnt = frameNumDiffErr.sum()
         
         if eventNumDiffErrCnt > 0:
@@ -147,7 +147,7 @@ def getEventNumMetric(tree, eventNums, femBranches, femSlots, logFile, writeLog=
                 print(f"Event numbers with jump > {eventNumDiffAllowed} for FEM {slot}: {nums}")
                 print(f"Event number differences for FEM {slot}: {diffs}")
 
-        eventNumRollover = df[eventNumDiff] < 0
+        eventNumRollover = df[diffBranch] < 0
         eventNumRolloverCnt = eventNumRollover.sum()
         
         if eventNumRolloverCnt > 0:
@@ -159,7 +159,7 @@ def getEventNumMetric(tree, eventNums, femBranches, femSlots, logFile, writeLog=
             elems = list(zip(nums, diffs))
             eventNumRolloverDict[slot] = elems
 
-            rollovers = ", ".join(str(int(num)) for num in eventNumRollovers)
+            rollovers = ", ".join(str(int(num)) for num in rollovers)
             nums = ", ".join(str(int(num)) for num in nums)
             if writeLog:
                 print(f"Number of event number rollovers for FEM {slot}: {eventNumRolloverCnt}", file=file)
@@ -218,11 +218,11 @@ def getFrameNumMetric(tree, frameNums, femBranches, femSlots, logFile, writeLog=
     frameNumRolloverDict = {}
     
     for branch, slot in zip(femBranches, femSlots):
-        numBranch = branch + '/' + numType
-        diffBranch = branch + '/' + numType[:-1] + 'Diff_'
+        numBranch = branch + '/frameNum_'
+        diffBranch = branch + '/frameNumDiff_'
         df[diffBranch] = df[numBranch].diff()
         
-        frameNumDiffErr = df[frameNumDiff] > frameNumDiffAllowed
+        frameNumDiffErr = ~df[diffBranch].isin(frameNumDiffAllowed)
         frameNumDiffErrCnt = frameNumDiffErr.sum()
         
         if frameNumDiffErrCnt > 0:
@@ -244,7 +244,7 @@ def getFrameNumMetric(tree, frameNums, femBranches, femSlots, logFile, writeLog=
                 print(f"Frame numbers with jump not in {frameNumDiffAllowed} for FEM {slot}: {nums}")
                 print(f"Frame number differences for FEM {slot}: {diffs}")
 
-        frameNumRollover = df[frameNumDiff] < 0
+        frameNumRollover = df[diffBranch] < 0
         frameNumRolloverCnt = frameNumRollover.sum()
         
         if frameNumRolloverCnt > 0:
@@ -256,7 +256,7 @@ def getFrameNumMetric(tree, frameNums, femBranches, femSlots, logFile, writeLog=
             elems = list(zip(nums, diffs))
             frameNumRolloverDict[slot] = elems
 
-            rollovers = ", ".join(str(int(num)) for num in frameNumRollovers)
+            rollovers = ", ".join(str(int(num)) for num in rollovers)
             nums = ", ".join(str(int(num)) for num in nums)
             if writeLog:
                 print(f"Number of frame number rollovers for FEM {slot}: {frameNumRolloverCnt}", file=file)
@@ -273,7 +273,7 @@ def getFrameNumMetric(tree, frameNums, femBranches, femSlots, logFile, writeLog=
     return frameNumDiffDict, frameNumRolloverDict
 
 
-def getADCWordCntErr(tree, datatype, femBranches, femSlots, logFile, writeLog=False):
+def getADCWordCntErr(tree, dataType, femBranches, femSlots, logFile, writeLog=False):
     if dataType == 'NU': numType = 'eventNum_'
     elif dataType == 'SN': numType = 'frameNum_'
 
@@ -413,6 +413,8 @@ def getChannelStartMissSN(tree, femBranches, femSlots, logFile, writeLog=False):
 
 
 def getROIMissCntSN(tree, femBranches, femSlots, logFile, writeLog=False):
+    file = open(logFile, 'a')
+
     roiStartMissCntDict = {}
     roiEndMissCntDict = {}
 
@@ -432,25 +434,27 @@ def getROIMissCntSN(tree, femBranches, femSlots, logFile, writeLog=False):
         for slot, num, channels, startMissCnts, endMissCnts in zip(slots, nums, chNums, roiStartMissCnts, roiEndMissCnts):
             if slot == 65535: continue
 
-            if slot not in roiStartMissDict: roiStartMissDict[slot] = {} 
-            if slot not in roiEndMissDict: roiEndMissDict[slot] = {} 
+            if slot not in roiStartMissCntDict: roiStartMissCntDict[slot] = {} 
+            if slot not in roiEndMissCntDict: roiEndMissCntDict[slot] = {} 
 
             for ch, startMissCnt, endMissCnt in zip(channels, startMissCnts, endMissCnts):
-                if ch not in roiStartMissDict[slot]: roiStartMissDict[slot][ch] = []
+                if ch not in roiStartMissCntDict[slot]: roiStartMissCntDict[slot][ch] = []
                 if startMissCnt > 0:
-                    roiStartMissDict[slot][ch].append(num, startMissCnt)
+                    roiStartMissCntDict[slot][ch].append((num, startMissCnt))
                     if writeLog:
                         print(f"Frame number {num}: {startMissCnt} ROI start miss for channel {ch} in FEM {slot}", file=file)
                     else:
                         print(f"Frame number {num}: {startMissCnt} ROI start miss for channel {ch} in FEM {slot}")
 
-                if ch not in roiEndMissDict[slot]: roiEndMissDict[slot][ch] = []
+                if ch not in roiEndMissCntDict[slot]: roiEndMissCntDict[slot][ch] = []
                 if endMissCnt > 0:
-                    roiEndMissDict[slot][ch].append(num, endMissCnt)
+                    roiEndMissCntDict[slot][ch].append((num, endMissCnt))
                     if writeLog:
                         print(f"Frame number {num}: {endMissCnt} ROI end miss for channel {ch} in FEM {slot}", file=file)
                     else:
                         print(f"Frame number {num}: {endMissCnt} ROI end miss for channel {ch} in FEM {slot}")
+
+    file.close()
 
     return roiStartMissCntDict, roiEndMissCntDict
 
@@ -480,6 +484,8 @@ def getROICntSN(tree, femBranches, femSlots, femSelect, printDF=False):
 
             rois = list(map(len, timestamps))
             roiCntDict[slot].loc[channels, num] = rois
+
+        if slot == femSelect:
             roiCntDict[slot].dropna(axis=1, how='all', inplace=True)
 
             if (printDF): display(roiCntDict[slot])
