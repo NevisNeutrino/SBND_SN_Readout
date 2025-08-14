@@ -38,49 +38,10 @@ int main(int argc, char* argv[]) {
     {"0000001", 3}
   };
 
-  // --- MODIFICATION START ---
-
-  // 1. Check if an input file was provided on the command line
-  if (argc < 2) {
-    cerr << "Error: No input file specified." << endl;
-    cerr << "Usage: " << argv[0] << " <input_file>" << endl;
-    return 1; // Exit with an error code
-  }
-
-  // 2. Get the input file path from the command-line arguments
-  string inputFilePath = argv[1];
-  
-  // 3. Create the output filename from the input filename
-  string outputFilePath;
-  // Find the last '.' to remove the extension
-  size_t lastDotPos = inputFilePath.rfind('.');
-  if (lastDotPos != string::npos) {
-    // Get the base name without the extension
-    outputFilePath = inputFilePath.substr(0, lastDotPos);
-  } else {
-    // No extension found, use the whole name
-    outputFilePath = inputFilePath;
-  }
-  // Append the new suffix
-  outputFilePath += "_waveform.txt";
-
   std::ifstream binFile;
-  binFile.open(inputFilePath, std::ios::binary);
-  if (!binFile.is_open()) {
-    cerr << "Error: Could not open input file '" << inputFilePath << "'" << endl;
-    return 1;
-  }
-
+  binFile.open("/nevis/riverside/data/dkalra/sbndFiles/data/sbndrawbin_run-00001_2025.08.11-15.21.54_TPC_NU.dat", std::ios::binary);
   std::ofstream outfile;
-  outfile.open(outputFilePath);
-  if (!outfile.is_open()) {
-    cerr << "Error: Could not open output file '" << outputFilePath << "'" << endl;
-    return 1;
-  }
-
-  cout << "Input file: " << inputFilePath << endl;
-  cout << "Output file: " << outputFilePath << endl;
-
+  outfile.open("NU_waveforms.txt");
 
   while( binFile.peek() != EOF ){
     uint32_t word32b;
@@ -205,10 +166,8 @@ int main(int argc, char* argv[]) {
           if ((first16b & 0x8000) == 0x0000) {
             //uncompressed: bit 15=0, lower 12 bits is ADC
             adcval = first16b & 0x0fff;
-
             outfile<< frame << "\t" << fem  << "\t" << startchannel << "\t" << samplecount << "\t" << sample+samplecount << "\t" << adcval << "\t" <<  event << "\n";
             outfile.flush();
-
             samplecount+=1;
             //std::cout << "ADC " << std::dec << adcval << std::endl;
           }
@@ -226,6 +185,10 @@ int main(int argc, char* argv[]) {
                     if (bits[i] == 0) {
                     zeroCount++;
                 } else { // Found next 1 
+
+                  if (i==15){
+                    zeroCount += -1;
+                  }
                     
             switch (zeroCount) {
             case 0: adcdiff.emplace_back(0); break;  // 1                     
@@ -255,15 +218,16 @@ int main(int argc, char* argv[]) {
             adcval += d;
 	    		  outfile<< frame << "\t" << fem  << "\t" << startchannel << "\t" << samplecount << "\t" << sample+samplecount << "\t" << adcval << "\t" <<  event << "\n";
 	    		  outfile.flush();
+
+            samplecount += 1;
 			      
-			      samplecount+=1;
           }
           adcdiff.clear();
-
           }
 
           else {
             std::cerr << "Warning: I don't know what to do with this word (in channel ADC) "  << std::hex << first16b << std::endl;
+
           } 
         }
 
@@ -286,6 +250,8 @@ int main(int argc, char* argv[]) {
             std::cerr << "Warning: ADC channel end " << endchannel << " doesn't match channel start " << startchannel << " at event " << event << std::endl;
           }
           inADCdata = false;
+
+          //std::cout << "samplecount: " << std::dec << samplecount << std::endl;
           samplecount = 0;
         }
 
@@ -312,7 +278,11 @@ int main(int argc, char* argv[]) {
                 if (bits[i] == 0) {
                   zeroCount++;
                 } else { // Found next 1 
-                    
+
+                if (i==15){
+                    zeroCount += -1;
+                }
+    
             switch (zeroCount) {
             case 0: adcdiff.emplace_back(0); break;  // 1                     
                                                                               
@@ -339,10 +309,12 @@ int main(int argc, char* argv[]) {
           }
 	        for (int d : adcdiff){
             adcval += d;
+
 	    		  outfile<< frame << "\t" << fem  << "\t" << startchannel << "\t" << samplecount << "\t" << sample+samplecount << "\t" << adcval << "\t" <<  event << "\n";
 	    		  outfile.flush();
+
+            samplecount += 1;
 			      
-			      samplecount+=1;
           }
           adcdiff.clear();
 

@@ -24,9 +24,9 @@ int main(int argc, char* argv[]) {
   uint16_t sample, sample_lower8bits, sample_higher4bits;
   bool inADCdata = false;
   int samplecount = 0;
-  int header_wordcount;
+  int header_wordcount = 0;
   int previous_frame = -1;
-  int wordcount;
+  int wordcount = 0;
   int adcval = -1;
   int channel;//,channel1, mappedchannel;
   uint16_t timetick=0;
@@ -42,49 +42,10 @@ int main(int argc, char* argv[]) {
     {"0000001", 3}
   };
 
-  // --- MODIFICATION START ---
-
-  // 1. Check if an input file was provided on the command line
-  if (argc < 2) {
-    cerr << "Error: No input file specified." << endl;
-    cerr << "Usage: " << argv[0] << " <input_file>" << endl;
-    return 1; // Exit with an error code
-  }
-
-  // 2. Get the input file path from the command-line arguments
-  string inputFilePath = argv[1];
-  
-  // 3. Create the output filename from the input filename
-  string outputFilePath;
-  // Find the last '.' to remove the extension
-  size_t lastDotPos = inputFilePath.rfind('.');
-  if (lastDotPos != string::npos) {
-    // Get the base name without the extension
-    outputFilePath = inputFilePath.substr(0, lastDotPos);
-  } else {
-    // No extension found, use the whole name
-    outputFilePath = inputFilePath;
-  }
-  // Append the new suffix
-  outputFilePath += "_waveform.txt";
-
   std::ifstream binFile;
-  binFile.open(inputFilePath, std::ios::binary);
-  if (!binFile.is_open()) {
-    cerr << "Error: Could not open input file '" << inputFilePath << "'" << endl;
-    return 1;
-  }
-
+  binFile.open("/nevis/riverside/data/dkalra/sbndFiles/data/sbndrawbin_run018880_2025.08.11-15.21.54_subfile0_TPC_SN.dat", std::ios::binary);
   std::ofstream outfile;
-  outfile.open(outputFilePath);
-  if (!outfile.is_open()) {
-    cerr << "Error: Could not open output file '" << outputFilePath << "'" << endl;
-    return 1;
-  }
-
-  cout << "Input file: " << inputFilePath << endl;
-  cout << "Output file: " << outputFilePath << endl;
-
+  outfile.open("SN_waveforms.txt");
 
   while( binFile.peek() != EOF ){
     uint32_t word32b;
@@ -105,7 +66,6 @@ int main(int argc, char* argv[]) {
     }
     else if (word32b  == 0xe0000000){
       //cout << "End of frame*******************" << endl;
-      previous_frame = frame;
       countheader=false;
     }
 
@@ -114,7 +74,7 @@ int main(int argc, char* argv[]) {
         if ((last16b >>8 == 0xf1) and (first16b == 0xffff)){ // there is no word which identifies end of header words for first FEM and start of next FEM , so we have to use this way to identify FEM words instead of using femHdrCount==2
           
           if ((wordcount != header_wordcount)){
-            std::cout << "For frame " << std::dec << frame << ", fem " << fem << " header wordcount: " << header_wordcount << " does not match manual wordcount: " << wordcount << std::endl;
+          //  std::cout << "For frame " << std::dec << frame << ", fem " << fem << " header wordcount: " << header_wordcount << " does not match manual wordcount: " << wordcount << std::endl;
           }
           fem =(last16b&0x1f);
           //std::cout << "FEM number: " << std::dec << fem << std::endl;
@@ -150,11 +110,13 @@ int main(int argc, char* argv[]) {
             frame_higher12bit= (first16b & 0xfff);
             frame = frame_higher12bit<<12|frame_lower12bit;
 
-            int frame_diff = frame - previous_frame;
-            if ((frame_diff != 1) && (frame_diff != 4)){
-                std::cerr << "Difference between current frame and previous frame is " << std::dec << frame_diff << " frames" << std::endl;  
-            }
-
+            //int frame_diff = frame - previous_frame;
+            //if ((frame_diff != 1) && (frame_diff != 4)){
+            //    std::cerr << "Difference between current frame and previous frame is " << std::dec << frame_diff << " frames" << std::endl;
+            //    std::cerr << "for frame " << frame << " and previous frame " << previous_frame << " for fem " << fem << std::endl;  
+            //}
+            
+            previous_frame = frame;
             //std::cout << "Frame: " << std::dec << frame << std::endl;
             //std::cout << frame_lower12bit << std::endl;
             //if (fem == 3){
@@ -266,7 +228,7 @@ int main(int argc, char* argv[]) {
 
             else {
                 if (first16b != 0){
-                    std::cout << "Warning: I don't know what to do with this word (in channel ROI) "  << std::hex << first16b << std::endl;
+                    //std::cout << "Warning: I don't know what to do with this word (in channel ROI) "  << std::hex << first16b << std::endl;
                     wordcount += 1;
                 }
             } 
@@ -274,7 +236,7 @@ int main(int argc, char* argv[]) {
 
         else {
           if (first16b != 0){ // I think we get these extra 0 words when the first word is the 0000 part of a channel start or end word                   
-            std::cout << "Warning: I don't know what to do with this word " << std::hex << first16b << std::endl;
+            //std::cout << "Warning: I don't know what to do with this word " << std::hex << first16b << std::endl;
             wordcount += 1;
           }
         }
@@ -374,7 +336,7 @@ int main(int argc, char* argv[]) {
 
             else {
                 if (last16b != 0){
-                    std::cout << "Warning: I don't know what to do with this word (in channel ROI) "  << std::hex << last16b << std::endl;
+                    //std::cout << "Warning: I don't know what to do with this word (in channel ROI) "  << std::hex << last16b << std::endl;
                 wordcount += 1;
                 }
             } 
@@ -382,7 +344,7 @@ int main(int argc, char* argv[]) {
       
       else {
         if (last16b != 0){
-            std::cout << "Warning: I don't know what to do with this word " << std::hex << last16b << std::endl;
+            //std::cout << "Warning: I don't know what to do with this word " << std::hex << last16b << std::endl;
             wordcount += 1;
         }
       }
