@@ -3,6 +3,7 @@ import sys
 import argparse
 import socket
 import zmq
+from datetime import datetime
 
 def parseArguments():
     def checkFile(file):
@@ -13,14 +14,20 @@ def parseArguments():
         return file
 
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--file", type=checkFile, required=True, help="file to send")
+    parser.add_argument("--file", type=checkFile, help="file to send")
     parser.add_argument("--host", type=str, required=True, help="server hostname")
     parser.add_argument("--port", type=int, required=True, help="server port number")
-    args = parser.parse_args()
+    parser.add_argument('--test', action='store_true', help="enable test mode")
 
-    print("File to send: ", args.file)
+    args = parser.parse_args()
+    if ((not args.test) and (not args.file)):
+        parser.error("--file is required unless --test is set")
+
+    if (not args.test): print("File to send: ", args.file)
     print("Server hostname: ", args.host)
     print("Server port number: ", args.port)
+    if args.test: print("Test mode: ON")
+    else: print("Test mode: OFF")
 
     return args
 
@@ -46,11 +53,12 @@ def checkConnection(host, port):
 if __name__ == "__main__":
     args = parseArguments()
     
-    try:
-        content = openFile(args.file)
-    except Exception as error:
-        print(error)
-        sys.exit(1)
+    if (not args.test):
+        try:
+            content = openFile(args.file)
+        except Exception as error:
+            print(error)
+            sys.exit(1)
 
     context = zmq.Context()
     zmqPushSocket = context.socket(zmq.PUSH)
@@ -61,7 +69,12 @@ if __name__ == "__main__":
         print(f"Can't connect to {args.host} on port {args.port}")
         sys.exit(1)
 
-    zmqPushSocket.send_multipart([args.file.encode(), content.encode()])
-    print(f"Sent {args.file} to {args.host} on port {args.port}")
+    if args.test:
+        now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        zmqPushSocket.send_string(f"TEST alert on {now}")
+        print(f"Sent TEST alert on {now} to {args.host} on port {args.port}")
+    else:
+        zmqPushSocket.send_multipart([args.file.encode(), content.encode()])
+        print(f"Sent {args.file} to {args.host} on port {args.port}")
 
     sys.exit(0)

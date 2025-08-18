@@ -64,23 +64,26 @@ if __name__ == "__main__":
 
     while not stopServer.is_set():
         try:
-            alertTimestamp = zmqSubSocket.recv_string(flags=zmq.NOBLOCK)
-            print(f"SNEWS alert received with timestamp: {alertTimestamp}")
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: SNEWS alert received with timestamp: {alertTimestamp}", file=logfile)
+            message = zmqSubSocket.recv_string(flags=zmq.NOBLOCK)
+            message = message.split()
 
-            alertTimestamp = datetime.strptime(alertTimestamp, "%Y.%m.%d.%H.%M.%S")
-            startTimestamp = alertTimestamp - timedelta(minutes=10)
-            endTimestamp = alertTimestamp + timedelta(minutes=50)
-            print(f"Saving files in time window: {startTimestamp} -> {endTimestamp}")
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saving files in time window: {startTimestamp} -> {endTimestamp}", file=logfile)
+            alertTimestamp = datetime.strptime(message[-1], "%Y.%m.%d.%H.%M.%S")
+            print(f"{message[0]} alert received with timestamp: {alertTimestamp}")
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message[0]} alert received with timestamp: {alertTimestamp}", file=logfile)
 
-            for filename in os.listdir(args.direc):
-                if ((filename.endswith('SN.dat')) and (os.path.isfile(os.path.join(args.direc, filename)))):
-                    filepath = os.path.join(args.direc, filename)
-                    filetime = datetime.fromtimestamp(os.path.getmtime(filepath))
-                    if startTimestamp <= filetime <= endTimestamp:
-                        print(f"- {filetime}: {filepath} saved")
-                        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: - {filetime}: {filepath} saved", file=logfile)
+            if message[0] == "SNEWS":
+                startTimestamp = alertTimestamp - timedelta(minutes=10)
+                endTimestamp = alertTimestamp + timedelta(minutes=50)
+                print(f"Saving files in time window: {startTimestamp} -> {endTimestamp}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saving files in time window: {startTimestamp} -> {endTimestamp}", file=logfile)
+
+                for filename in os.listdir(args.direc):
+                    if ((filename.endswith('SN.dat')) and (os.path.isfile(os.path.join(args.direc, filename)))):
+                        filepath = os.path.join(args.direc, filename)
+                        filetime = datetime.fromtimestamp(os.path.getmtime(filepath))
+                        if startTimestamp <= filetime <= endTimestamp:
+                            print(f"- {filetime}: {filepath} saved")
+                            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: - {filetime}: {filepath} saved", file=logfile)
         except zmq.Again:
             pass
 

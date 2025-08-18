@@ -65,18 +65,38 @@ if __name__ == "__main__":
     while not stopServer.is_set():
         try:
             data = zmqPullSocket.recv_multipart(flags=zmq.NOBLOCK)
-            filename = "/data/snewsAlerts/" + data[0].decode(errors='replace')
-            content = data[1].decode('utf-8', errors='replace')
+            if len(data) == 1:
+                print(f"Received TEST alert from port 7910")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Received TEST alert from port 7910", file=logfile)
 
-            with open(f"{filename}", 'w', encoding='utf-8') as file:
-                file.write(content)
-            print(f"Saved SNEWS alert in {filename}")
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saved SNEWS alert in {filename}", file=logfile)
+                content = data[0].decode('utf-8', errors='replace')
 
-            timestamp = getTimestamp(filename)
-            zmqPubSocket.send_string(timestamp)
-            print(f"Published SNEWS alert timestamp to port 7901: {timestamp}")
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published SNEWS alert timestamp to port 7901: {timestamp}", file=logfile)
+                timestamp = " ".join(content.split()[-2:])
+                timestamp = datetime.strptime(timestamp, '%Y-%m-%d %H:%M:%S')
+                timestamp = timestamp.strftime('%Y.%m.%d.%H.%M.%S')
+                message = f"TEST ALERT: {timestamp}"
+
+                zmqPubSocket.send_string(message)
+                print(f"Published TEST alert timestamp to port 7901: {timestamp}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published TEST alert timestamp to port 7901: {timestamp}", file=logfile)
+            else:
+                print(f"Received SNEWS alert from port 7910")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Received SNEWS alert from port 7910", file=logfile)
+
+                filename = "/data/snewsAlerts/" + data[0].decode(errors='replace')
+                content = data[1].decode('utf-8', errors='replace')
+
+                with open(f"{filename}", 'w', encoding='utf-8') as file:
+                    file.write(content)
+                print(f"Saved SNEWS alert in {filename}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saved SNEWS alert in {filename}", file=logfile)
+
+                timestamp = getTimestamp(filename)
+                message = f"SNEWS ALERT: {timestamp}"
+
+                zmqPubSocket.send_string(message)
+                print(f"Published SNEWS alert timestamp to port 7901: {timestamp}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published SNEWS alert timestamp to port 7901: {timestamp}", file=logfile)
         except UnicodeDecodeError:
             print("Could not decode {filename}")
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Could not decode {filename}", file=logfile)
