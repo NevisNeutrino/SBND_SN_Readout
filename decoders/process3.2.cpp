@@ -18,6 +18,7 @@
 using namespace std;
 
 int main(int argc, char* argv[]) {
+  bool print=false; // change if you want to print detailed decoder output
   int femHdrCount=0;
   int32_t fem, fem_idx;
   bool countheader=false;
@@ -28,13 +29,17 @@ int main(int argc, char* argv[]) {
   constexpr int nchannels = 64;
   bool inADCdata = false, firstval = false;
   std::vector<int> adc_vals;
-  int roi = -1, baseline = -1, amplitude = -1, adcval = -1;
-  std::vector<std::vector<int>> roi_count(nfems, std::vector<int>(nchannels, 0));
-  std::vector<std::vector<double>> roi_avg(nfems, std::vector<double>(nchannels, 0.0));
+  int roistart = -1, roiend = -1, baseline = -1, amplitude = -1, adcval = -1;
+  std::vector<std::vector<int>> roistart_count(nfems, std::vector<int>(nchannels, 0));
+  std::vector<std::vector<double>> roistart_sum(nfems, std::vector<double>(nchannels, 0.0));
+  std::vector<std::vector<int>> roiend_count(nfems, std::vector<int>(nchannels, 0));
+  std::vector<std::vector<double>> roiend_sum(nfems, std::vector<double>(nchannels, 0.0));
   std::vector<std::vector<int>> baseline_count(nfems, std::vector<int>(nchannels, 0));
-  std::vector<std::vector<double>> baseline_avg(nfems, std::vector<double>(nchannels, 0.0));
+  std::vector<std::vector<double>> baseline_sum(nfems, std::vector<double>(nchannels, 0.0));
   std::vector<std::vector<int>> amplitude_count(nfems, std::vector<int>(nchannels, 0));
-  std::vector<std::vector<double>> amplitude_avg(nfems, std::vector<double>(nchannels, 0.0));
+  std::vector<std::vector<double>> amplitude_sum(nfems, std::vector<double>(nchannels, 0.0));
+  std::vector<std::vector<int>> missed_ROIstart(nfems, std::vector<int>(nchannels, 0));
+  std::vector<std::vector<int>> missed_ROIend(nfems, std::vector<int>(nchannels, 0));
   int channel = -1;
   std::vector<int> adcdiff;
   int firstframe;
@@ -62,13 +67,6 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  std::string outfilename = "run" + std::string(argv[2]) + "_tpc" + std::string(argv[3]) + "_dataquality_metrics.txt";
-  bool new_file = !std::filesystem::exists(outfilename) || std::filesystem::file_size(filename) == 0;
-  std::ofstream outfile(outfilename, std::ios::app);
-  if (new_file) {
-    outfile << "FirstFrame\tLastFrame\tAvgNROIs\tAvgBaseline\tAvgAmplitude\n";
-  }
-
   while( binFile.peek() != EOF ){
     uint32_t word32b;
     binFile.read( reinterpret_cast<char*>(&word32b), sizeof(word32b) );
@@ -93,12 +91,29 @@ int main(int argc, char* argv[]) {
       if(lookupFEM==true){
         if ((last16b >>8 == 0xf1) and (first16b == 0xffff)){ // there is no word which identifies end of header words for first FEM and start of next FEM , so we have to use this way to identify FEM words instead of using femHdrCount==2
           if ((frame > 1) && (channel > -1)){
-             int& count = roi_count[fem_idx][channel];
-             double& avg = roi_avg[fem_idx][channel];
-             avg = (avg * count + roi) / (count + 1);
-             count += 1;
+             int& scount = roistart_count[fem_idx][channel];
+             double& ssum = roistart_sum[fem_idx][channel];
+             ssum += roistart;
+             scount += 1;
+
+             int& ecount = roiend_count[fem_idx][channel];
+             double& esum = roiend_sum[fem_idx][channel];
+             esum += roiend;
+             ecount += 1;
+
            }
+
+          if ((inADCdata == true) && (frame>1) && (channel > -1)){
+            if (print){
+              std::cout << "Missing ROI end for channel " << std::dec << channel << " for frame " << frame << " and fem " << fem << std::endl;
+            }
+            missed_ROIend[fem_idx][channel]++;
+          }
+
+          roistart = 0;
+          roiend = 0;
           channel = -1; 
+          inADCdata == false;
 
           fem =(last16b&0x1f);
           fem_idx = fem-3;
@@ -134,21 +149,42 @@ int main(int argc, char* argv[]) {
     else{
         
         if(first16b>>12 == 0x1){
+            if ((inADCdata == true) && (frame>1) && (channel > -1)){
+              if (print){
+               std::cout << "Missing ROI end for channel " << std::dec << channel << " for frame " << frame << " and fem " << fem << std::endl;
+              }
+              missed_ROIend[fem_idx][channel]++;
+           }
+
             inADCdata = false;
             if ((channel > -1) && (frame>1)){
-                int& count = roi_count[fem_idx][channel];
-                double& avg = roi_avg[fem_idx][channel];
-                avg = (avg * count + roi) / (count + 1);
-                count += 1;
+                int& scount = roistart_count[fem_idx][channel];
+                double& ssum = roistart_sum[fem_idx][channel];
+                ssum += roistart;
+                scount += 1;
+
+                int& ecount = roiend_count[fem_idx][channel];
+                double& esum = roiend_sum[fem_idx][channel];
+                esum += roiend;
+                ecount += 1;
+
             }
             channel = (first16b & 0x3f);   
-            roi = 0;
+            roistart = 0;
+            roiend = 0;
         }
         
         else if ((first16b & 0xC000) == 0x4000){
-            inADCdata = true;
-            firstval = true;
-            roi++;
+          if ((inADCdata == true) && (frame>1) && (channel > -1)){
+            if (print){
+              std::cout << "Missing ROI end for channel " << std::dec << channel << " for frame " << frame << " and fem " << fem << std::endl;
+            }
+            missed_ROIend[fem_idx][channel]++;
+          }
+          inADCdata = true;
+
+          firstval = true;
+          roistart++;
         }
 
         else if (inADCdata) {
@@ -157,8 +193,8 @@ int main(int argc, char* argv[]) {
                 if ((firstval == true) && (frame>1) && (channel > -1)){
                   baseline = adcval;
                   int& count = baseline_count[fem_idx][channel];
-                  double& avg = baseline_avg[fem_idx][channel];
-                  avg = (avg * count + baseline) / (count + 1);
+                  double& sum = baseline_sum[fem_idx][channel];
+                  sum += baseline;
                   count += 1;
                   firstval = false;
                 }
@@ -172,11 +208,12 @@ int main(int argc, char* argv[]) {
                 if ((frame>1) && (channel > -1)){
                   amplitude = *std::max_element(adc_vals.begin(), adc_vals.end());
                   int& count = amplitude_count[fem_idx][channel];
-                  double& avg = amplitude_avg[fem_idx][channel];
-                  avg = (avg * count + amplitude) / (count + 1);
+                  double& sum = amplitude_sum[fem_idx][channel];
+                  sum += amplitude;
                   count += 1;
                 }  
                 adc_vals.clear();
+                roiend++;
             }
 
 	        else if ((first16b & 0x8000) == 0x8000) { 
@@ -224,22 +261,54 @@ int main(int argc, char* argv[]) {
                 adcdiff.clear();
             }
           }
+
+        else if(first16b>>12 == 0x3){
+          if ((frame>1) && (channel > -1)){
+            if (print){
+              std::cout << "Missing ROI start for channel " << std::dec << channel << " for frame " << frame << " and fem " << fem << std::endl;
+            }
+            missed_ROIstart[fem_idx][channel]++;
+            roiend++;
+          }
+          inADCdata = false;   
+        }
         
         if(last16b>>12 == 0x1){
+            if ((inADCdata == true) && (frame>1) && (channel > -1)){
+              if (print){
+               std::cout << "Missing ROI end for channel " << std::dec << channel << " for frame " << frame << " and fem " << fem << std::endl;
+              }
+              missed_ROIend[fem_idx][channel]++;
+            }
+
             inADCdata = false;
             if ((channel > -1) && (frame>1)){
-                int& count = roi_count[fem_idx][channel];
-                double& avg = roi_avg[fem_idx][channel];
-                avg = (avg * count + roi) / (count + 1);
-                count += 1;
+                int& scount = roistart_count[fem_idx][channel];
+                double& ssum = roistart_sum[fem_idx][channel];
+                ssum += roistart;
+                scount += 1;
+
+                int& ecount = roiend_count[fem_idx][channel];
+                double& esum = roiend_sum[fem_idx][channel];
+                esum += roiend;
+                ecount += 1;
+
             }
             channel = (last16b & 0x3f);
-            roi = 0;
+            roistart = 0;
+            roiend = 0;
         }
         
         else if ((last16b & 0xC000) == 0x4000){
-            inADCdata = true;
-            roi++;
+          if ((inADCdata == true) && (frame>1) && (channel > -1)){
+            if (print){
+              std::cout << "Missing ROI end for channel " << std::dec << channel << " for frame " << frame << " and fem " << fem << std::endl;
+            }
+            missed_ROIend[fem_idx][channel]++;
+          }
+          inADCdata = true;
+          firstval = true;
+          roistart++;
         }
         
         else if (inADCdata) {
@@ -248,8 +317,8 @@ int main(int argc, char* argv[]) {
                 if ((firstval == true) && (frame>1) && (channel > -1)){
                   baseline = adcval;
                   int& count = baseline_count[fem_idx][channel];
-                  double& avg = baseline_avg[fem_idx][channel];
-                  avg = (avg * count + baseline) / (count + 1);
+                  double& sum = baseline_sum[fem_idx][channel];
+                  sum += baseline;
                   count += 1;
                   firstval = false;
                }   
@@ -263,11 +332,12 @@ int main(int argc, char* argv[]) {
                 if ((frame>1) && (channel > -1)){
                   amplitude = *std::max_element(adc_vals.begin(), adc_vals.end());
                   int& count = amplitude_count[fem_idx][channel];
-                  double& avg = amplitude_avg[fem_idx][channel];
-                  avg = (avg * count + amplitude) / (count + 1);
+                  double& sum = amplitude_sum[fem_idx][channel];
+                  sum += amplitude;
                   count += 1;
                 }  
                 adc_vals.clear();
+                roiend++;
             }
 	
 	        else if ((last16b & 0x8000) == 0x8000) {               
@@ -315,47 +385,41 @@ int main(int argc, char* argv[]) {
                 adcdiff.clear();
                 }
       }
+      
+      else if(first16b>>12 == 0x3){
+          if ((frame>1) && (channel > -1)){
+            if (print){
+              std::cout << "Missing ROI start for channel " << std::dec << channel << " for frame " << frame << " and fem " << fem << std::endl;
+            }
+            missed_ROIstart[fem_idx][channel]++;
+            roiend++;
+          }
+        inADCdata = false;   
+      }
+
      }
     }//end of else
 
   }//end of while loop  
-  std::array<double, nfems> roi_avg_per_fem = {};
-  std::array<double, nfems> baseline_avg_per_fem = {};
-  std::array<double, nfems> amplitude_avg_per_fem = {};
 
-
-  std::ofstream outfile2("run" + std::string(argv[2]) + "_tpc" + std::string(argv[3]) + "_channel_metrics_frame" + std::to_string(firstframe) + ".txt");
-  outfile2 << "FEM\tChannel\tAvgNROIs\tAvgBaseline\tAvgAmplitude\n";
-
+  std::ofstream outfile("run" + std::string(argv[2]) + "_tpc" + std::string(argv[3]) + "_channel_metrics.txt");
+  outfile << "Frame " << firstframe << "-" << frame << "\n";
+  outfile << "FEM\tChannel\tNROIStartRate\tNROIEndRate\tAvgBaseline\tAvgAmplitude\tRatioMissedROIstartperROIstart\tRatioMissedROIendperROIend\n";
+  
   for (int fem = 0; fem < nfems; ++fem) {
-    double roi_total = 0.0, baseline_total = 0.0, amplitude_total = 0.0;
-    int count = 0;
     for (int ch = 0; ch < nchannels; ++ch) {
-      outfile2 << fem+3 << "\t" << ch << "\t" << roi_avg[fem][ch] << "\t" << baseline_avg[fem][ch] << "\t" << amplitude_avg[fem][ch] << "\n";
+      double roistart = (roistart_count[fem][ch] > 0) ? roistart_sum[fem][ch] / roistart_count[fem][ch]: 0.0;
+      double roiend = (roiend_count[fem][ch] > 0) ? roiend_sum[fem][ch] / roiend_count[fem][ch]: 0.0;  
+      double baseline = (baseline_count[fem][ch] > 0) ? baseline_sum[fem][ch] / baseline_count[fem][ch]: 0.0;  
+      double amplitude = (amplitude_count[fem][ch] > 0) ? amplitude_sum[fem][ch] / amplitude_count[fem][ch]: 0.0;  
+
+      double missed_start_per_roi = (roistart_sum[fem][ch]) ? missed_ROIstart[fem][ch] / (roistart_sum[fem][ch]): 0.0;
+      double missed_end_per_roi = (roiend_sum[fem][ch]) ? missed_ROIend[fem][ch] / (roiend_sum[fem][ch]): 0.0;
+
+      outfile << fem+3 << "\t" << ch << "\t" << roistart << "\t" << roiend << "\t" << baseline << "\t" << amplitude << "\t" << missed_start_per_roi << "\t" << missed_end_per_roi << "\n";
     
-      double roi = roi_avg[fem][ch];
-      double baseline = baseline_avg[fem][ch];
-      double amplitude = amplitude_avg[fem][ch];
-
-      if ((roi != 0.0) && (baseline!= 0.0) && (amplitude!=0.0)) {
-        roi_total += roi;
-        baseline_total += baseline;
-        amplitude_total += amplitude;
-        count++;
-      }
     }
-
-    roi_avg_per_fem[fem] = (count > 0) ? roi_total / count : 0.0;
-    baseline_avg_per_fem[fem] = (count > 0) ? baseline_total / count : 0.0;
-    amplitude_avg_per_fem[fem] = (count > 0) ? amplitude_total / count : 0.0;
-
-    //std::cout << "For FEM " << std::dec << fem + 3 << ", the average nrois: " << roi_avg_per_fem[fem] << ", baseline: " << baseline_avg_per_fem[fem] << ", amplitude: " << amplitude_avg_per_fem[fem] << std::endl;
   }
 
-  double avg_nrois = std::accumulate(roi_avg_per_fem.begin(), roi_avg_per_fem.end(), 0.0) / roi_avg_per_fem.size();
-  double avg_baselines = std::accumulate(baseline_avg_per_fem.begin(), baseline_avg_per_fem.end(), 0.0) / baseline_avg_per_fem.size();
-  double avg_amplitudes = std::accumulate(amplitude_avg_per_fem.begin(), amplitude_avg_per_fem.end(), 0.0) / amplitude_avg_per_fem.size();
-
-  outfile << firstframe << "\t" << frame << "\t" << avg_nrois << "\t" << avg_baselines << "\t" << avg_amplitudes << "\n";
 
 }// end of int main function
