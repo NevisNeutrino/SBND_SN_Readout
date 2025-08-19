@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
   };
 
   std::ifstream binFile;
-  binFile.open("/nevis/riverside/data/dkalra/sbndFiles/data/sbndrawbin_run-00001_2025.08.11-15.21.54_TPC_NU.dat", std::ios::binary);
+  binFile.open("sbndrawbin_run-00001_2025.08.16-12.29.48_TPC_NU_TPC01.dat", std::ios::binary);
   std::ofstream outfile;
   outfile.open("NU_waveforms.txt");
 
@@ -63,6 +63,8 @@ int main(int argc, char* argv[]) {
     else if (word32b  == 0xe0000000){
       //cout << "End of event*******************" << endl;
       countheader=false;
+
+      break;
     }
 
     else{

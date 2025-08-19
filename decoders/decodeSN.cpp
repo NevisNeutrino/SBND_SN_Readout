@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
   };
 
   std::ifstream binFile;
-  binFile.open("/nevis/riverside/data/dkalra/sbndFiles/data/sbndrawbin_run018880_2025.08.11-15.21.54_subfile0_TPC_SN.dat", std::ios::binary);
+  binFile.open("sbndrawbin_run018963_2025.08.16-12.29.48_subfile0_TPC01_SN.dat", std::ios::binary);
   std::ofstream outfile;
   outfile.open("SN_waveforms.txt");
 
@@ -122,6 +122,7 @@ int main(int argc, char* argv[]) {
             //if (fem == 3){
             //    std::cout << "FEM frame: " << std::dec << frame << std::endl;
             //}
+            //if (frame > 678){break;}
         }
 
         else if(femHdrCount==7){
@@ -155,8 +156,10 @@ int main(int argc, char* argv[]) {
         else if (inADCdata) {
             if (first16b>>12 == 0x2){
                 adcval = (first16b & 0xfff);
+                //if (frame == 677){
                 outfile << frame << "\t" << fem  << "\t" << channel << "\t" << timetick+samplecount << "\t" << adcval <<  "\n";
                 outfile.flush();
+                //}
                 samplecount += 1;
                 wordcount += 1;
                 //std::cout << "non-huffman " << adc << " : " << wordcount << std::endl;
@@ -167,8 +170,10 @@ int main(int argc, char* argv[]) {
             else if (first16b>>12 == 0x3){
                 adcval = (first16b & 0xfff);
                 //std::cout << " EOW packet ADC word: " << std::dec << adcval << std::endl;
+                //if (frame == 677){
                 outfile << frame << "\t" << fem  << "\t" << channel << "\t" << timetick+samplecount << "\t" << adcval <<  "\n";
                 outfile.flush();
+                //}
                 inADCdata = false;
                 samplecount = 0;
                 wordcount += 1;
@@ -216,8 +221,10 @@ int main(int argc, char* argv[]) {
                 }
 	            for (int d : adcdiff){
                     adcval += d;
+                    //if (frame == 677){
 	    		    outfile << frame << "\t" << fem  << "\t" << channel << "\t" << timetick+samplecount << "\t" << adcval << "\n";
 	    		    outfile.flush();
+                    //}
 			      
 			        samplecount+=1;
                 }
@@ -262,8 +269,10 @@ int main(int argc, char* argv[]) {
         else if (inADCdata) {
             if (last16b>>12 == 0x2){
                 adcval = (last16b & 0xfff);
+                //if (frame == 677){
                 outfile << frame << "\t" << fem  << "\t" << channel << "\t" << timetick+samplecount << "\t" << adcval <<  "\n";
                 outfile.flush();
+                //}
                 samplecount += 1;
                 wordcount += 1;
                 //std::cout << "non-huffman " << adc << " : " << wordcount << std::endl;
@@ -274,8 +283,10 @@ int main(int argc, char* argv[]) {
             else if (last16b>>12 == 0x3){
                 adcval = (last16b & 0xfff);
                 //std::cout << " EOW packet ADC word: " << std::dec << adcval << std::endl;
+                //if (frame == 677){
                 outfile << frame << "\t" << fem  << "\t" << channel << "\t" << timetick+samplecount << "\t" << adcval <<  "\n";
                 outfile.flush();
+                //}
                 inADCdata = false;
                 samplecount = 0;
                 wordcount += 1;
@@ -323,8 +334,10 @@ int main(int argc, char* argv[]) {
                 }
 	            for (int d : adcdiff){
                     adcval += d;
+                    //if (frame == 677){
 	    		    outfile << frame << "\t" << fem  << "\t" << channel << "\t" << timetick+samplecount << "\t" << adcval << "\n";
 	    		    outfile.flush();
+                    //}
 			      
 			        samplecount +=1 ;
                 }
