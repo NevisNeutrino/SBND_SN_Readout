@@ -21,7 +21,7 @@ if __name__ == "__main__":
 
     frameNums = getFrameNums(tree)
 
-    logEventEndMiss(tree, frameNums, 'NU', , flog, writeLog=args.write, printTerm=args.print, printDF=args.print)
+    logEventEndMiss(tree, frameNums, 'NU', flog, writeLog=args.write, printTerm=args.print, printDF=args.print)
     if args.write: print("Logged: Event End Miss Metric")
 
     logFEMHeaderMiss(tree, frameNums, 'NU', femBranches, femSlots, flog, writeLog=args.write, printTerm=args.print, printDF=args.print)

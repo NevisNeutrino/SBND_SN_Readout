@@ -25,28 +25,28 @@ if __name__ == "__main__":
     chNums = range(64)
     print(f"FEM slots: {femSlots}")
 
-    frameNums = getFrameNums(tree)
+    eventNums = getEventNums(tree)
 
     plt.figure(figsize=(10, 6))
 
-    eventEndMiss = getEventEndMiss(tree, frameNums, 'NU')
+    eventEndMiss = getEventEndMiss(tree, eventNums, 'NU')
     nEvent = len(tree['eventID'].array())
     nEventEndMiss = len(eventEndMiss)
     x = [0, 1]
     y = [(nEvent - nEventEndMiss), nEventEndMiss]
     labels = [
-        f"Total number of frames = {sum(y)}",
-        f"Number of frames with Event End = {y[0]}",
-        f"Number of frames without Event End = {y[1]}"
+        f"Total number of events = {sum(y)}",
+        f"Number of events with Event End = {y[0]}",
+        f"Number of events without Event End = {y[1]}"
     ]
     handles = [Patch(facecolor='none', edgecolor='none', label=label) for label in labels]
     plt.bar(x, y, width=1.0, align='center', edgecolor='black', linewidth=2.0)
     plt.yscale('log')
     plt.title("Event End Miss Metric")
     plt.xticks(x, ["Event End Exist", "Event End Miss"])
-    plt.ylabel("Number of frames")
+    plt.ylabel("Number of events")
     plt.grid(True)
-    plt.legend(handles=handles, loc='upper right', frameon=True, handlelength=0, handletextpad=0.)
+    plt.legend(handles=handles, loc='upper right', eventon=True, handlelength=0, handletextpad=0.)
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
@@ -54,7 +54,7 @@ if __name__ == "__main__":
     if args.show: plt.show()
     plt.clf()
 
-    femDict = getFEMHeaderMiss(tree, frameNums, 'NU', femBranches, femSlots)
+    femDict = getFEMHeaderMiss(tree, eventNums, 'NU', femBranches, femSlots)
     x = []
     y = []
     labels = []
@@ -67,7 +67,7 @@ if __name__ == "__main__":
     plt.title("FEM Header Miss Metric")
     plt.xticks(x, labels)
     plt.xlabel("FEM slot")
-    plt.ylabel("Number of frames")
+    plt.ylabel("Number of events")
     plt.grid(True)
     plt.tight_layout()
     if args.save: 
@@ -76,67 +76,67 @@ if __name__ == "__main__":
     if args.show: plt.show()
     plt.clf()
     
-    firstFrameNums, lastFrameNums, frameNumDiffDict, frameNumRolloverDict = getFrameNumMetric(tree, frameNums, femBranches, femSlots)
+    firstEventNums, lastEventNums, eventNumDiffDict, eventNumRolloverDict = getEventNumMetric(tree, eventNums, femBranches, femSlots)
     indices = []
     labels = []
     for idx, slot in enumerate(femSlots):
         indices.append(idx)
         labels.append(slot)
-    plt.bar(indices, firstFrameNums, width=1.0, align='center', edgecolor='black', linewidth=2.0)
-    plt.title("First Frame Numbers Metric")
+    plt.bar(indices, firstEventNums, width=1.0, align='center', edgecolor='black', linewidth=2.0)
+    plt.title("First Event Numbers Metric")
     plt.xticks(indices, labels)
     plt.xlabel("FEM slot")
-    plt.ylabel("Frame number")
+    plt.ylabel("Event number")
     plt.grid(True)
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
-        print("Plot saved: First Frame Numbers Metric")
+        print("Plot saved: First Event Numbers Metric")
     if args.show: plt.show()
     plt.clf()
-    plt.bar(indices, lastFrameNums, width=1.0, align='center', edgecolor='black', linewidth=2.0)
-    plt.title("Last Frame Numbers Metric")
+    plt.bar(indices, lastEventNums, width=1.0, align='center', edgecolor='black', linewidth=2.0)
+    plt.title("Last Event Numbers Metric")
     plt.xticks(indices, labels)
     plt.xlabel("FEM slot")
-    plt.ylabel("Frame number")
+    plt.ylabel("Event number")
     plt.grid(True)
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
-        print("Plot saved: Last Frame Numbers Metric")
+        print("Plot saved: Last Event Numbers Metric")
     if args.show: plt.show()
     plt.clf()
     data = []
-    for slot, df in frameNumDiffDict.items():
-        data.append(df[f"fem{slot}/frameNumDiff_"])
+    for slot, df in eventNumDiffDict.items():
+        data.append(df[f"fem{slot}/eventNumDiff_"])
     flatten = [diff for diffs in data for diff in diffs]
     if len(flatten) == 0: bins = 1
     else: bins = range(0, (int(max(flatten)) + 2))
-    counts, edges, _ = plt.hist(data, bins=bins, stacked=True, label=[f"FEM {slot}" for slot in frameNumDiffDict], edgecolor='black')
+    counts, edges, _ = plt.hist(data, bins=bins, stacked=True, label=[f"FEM {slot}" for slot in eventNumDiffDict], edgecolor='black')
     heights = counts.max(axis=0)
     centers = (edges[:-1] + edges[1:]) / 2
     for x, y in zip(centers, heights):
         plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=20)
     plt.ylim(top=(max(heights) * 1.1))
     #plt.yscale('symlog')
-    plt.title("Frame Number Difference Metric")
-    plt.xlabel("Frame number difference")
-    plt.ylabel("Number of frames")
+    plt.title("Event Number Difference Metric")
+    plt.xlabel("Event number difference")
+    plt.ylabel("Number of events")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
-        print("Plot saved: Frame Number Difference Metric")
+        print("Plot saved: Event Number Difference Metric")
     if args.show: plt.show()
     plt.clf()
     data = []
-    for slot, df in frameNumRolloverDict.items():
-        data.append(df[f"fem{slot}/frameNumRollover_"])
+    for slot, df in eventNumRolloverDict.items():
+        data.append(df[f"fem{slot}/eventNumRollover_"])
     flatten = [rollover for rollovers in data for rollover in rollovers]
     if len(flatten) == 0: bins = 1
     else: bins = range(0, (int(max(flatten)) + 2))
-    counts, edges, _ = plt.hist(data, bins=bins, stacked=True, label=[f"FEM {slot}" for slot in frameNumRolloverDict], edgecolor='black')
+    counts, edges, _ = plt.hist(data, bins=bins, stacked=True, label=[f"FEM {slot}" for slot in eventNumRolloverDict], edgecolor='black')
     heights = counts.max(axis=0)
     centers = (edges[:-1] + edges[1:]) / 2
     if max(heights) > 0:
@@ -144,15 +144,15 @@ if __name__ == "__main__":
             plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=20)
         plt.ylim(top=(max(heights) * 1.1))
     #plt.yscale('symlog')
-    plt.title("Frame Number Rollover Metric")
-    plt.xlabel("Frame number rollover")
-    plt.ylabel("Number of frames")
+    plt.title("Event Number Rollover Metric")
+    plt.xlabel("Event number rollover")
+    plt.ylabel("Number of events")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
-        print("Plot saved: Frame Number Rollover Metric")
+        print("Plot saved: Event Number Rollover Metric")
     if args.show: plt.show()
     plt.clf()
 
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
     plt.xlabel("Channel number")
     plt.ylabel("FEM slot")
-    plt.colorbar(label="Number of frames")
+    plt.colorbar(label="Number of events")
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
@@ -186,7 +186,7 @@ if __name__ == "__main__":
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
     plt.xlabel("Channel number")
     plt.ylabel("FEM slot")
-    plt.colorbar(label="Number of frames")
+    plt.colorbar(label="Number of events")
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
