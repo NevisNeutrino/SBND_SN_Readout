@@ -1,29 +1,26 @@
+import os
+import sys
 import argparse
 import re
 import numpy as np
 
 def parseArguments():
-    def checkRootFile(file):
+    def checkFile(file):
         if not file.endswith(".root"):
-            raise argparse.ArgumentTypeError(f"Input root file must be a .root file")
-        elif not os.access(file, os.R_OK):
-            raise argparse.ArgumentTypeError(f"{file} can't be opened")
-        return file
-
-    def checkLogFile(file):
-        if not file.endswith(".log"):
-            raise argparse.ArgumentTypeError(f"Input log file must be a .log file")
+            raise argparse.ArgumentTypeError(f"Input file must be a .root file")
         elif not os.access(file, os.R_OK):
             raise argparse.ArgumentTypeError(f"{file} can't be opened")
         return file
 
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument("--root", type=checkRootFile, required=True, help="input root file")
-    parser.add_argument("--log", type=checkLogFile, required=True, help="input log file")
-    args = parser.parse_args()
+    parser.add_argument('--root', type=checkFile, required=True, help="input root file")
+    parser.add_argument('--write', action='store_true', help="enable write to log file")
+    parser.add_argument('--print', action='store_true', help="enable print to terminal")
+    parser.add_argument('--save', action='store_true', help="save plots to pdf file")
+    parser.add_argument('--show', action='store_true', help="show plots")
 
+    args = parser.parse_args()
     print("Input root file: ", args.root)
-    print("Input log file: ", args.log)
 
     return args
 

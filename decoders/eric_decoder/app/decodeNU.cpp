@@ -174,43 +174,73 @@ int main(int argc, char* argv[]) {
 		  case STATE::GET_ADC_WORD_CNT: {
 				fbin.read(reinterpret_cast<char*>(&word32b), sizeof(word32b));
 				if (debug) cout << "GET_ADC_WORD_CNT: " << "0x" << uppercase << hex << word32b << endl;
-				unsigned int adcCntTrue = ((word32b & 0xFFF) << 12) | ((word32b >> 16) & 0xFFF);
-				fems[currFEMSlot]->setADCCntTrue(adcCntTrue);
-				state = STATE::GET_EVENT_NUM;
+				if (((word32b >> 28) == 0xF) && (((word32b >> 12) & 0xF) == 0xF)) {
+					unsigned int adcCntTrue = ((word32b & 0xFFF) << 12) | ((word32b >> 16) & 0xFFF);
+					fems[currFEMSlot]->setADCCntTrue(adcCntTrue);
+					state = STATE::GET_EVENT_NUM;
+				}
+				else {
+					fems[currFEMSlot]->setFEMSlot(0xFFFF);
+					state = STATE::WAIT_FEM_HEADER;
+				}
 				break;
 			}
 		  case STATE::GET_EVENT_NUM: {
 				fbin.read(reinterpret_cast<char*>(&word32b), sizeof(word32b));
 				if (debug) cout << "GET_EVENT_NUM: " << "0x" << uppercase << hex << word32b << endl;
-				unsigned int eventNum = ((word32b & 0xFFF) << 12) | ((word32b >> 16) & 0xFFF);
-				fems[currFEMSlot]->setEventNum(eventNum);
-				state = STATE::GET_EVENT_PACKET_FRAME_NUM;
+				if (((word32b >> 28) == 0xF) && (((word32b >> 12) & 0xF) == 0xF)) {
+					unsigned int eventNum = ((word32b & 0xFFF) << 12) | ((word32b >> 16) & 0xFFF);
+					fems[currFEMSlot]->setEventNum(eventNum);
+					state = STATE::GET_EVENT_PACKET_FRAME_NUM;
+				}
+				else {
+					fems[currFEMSlot]->setFEMSlot(0xFFFF);
+					state = STATE::WAIT_FEM_HEADER;
+				}
 				break;
 			}
 		  case STATE::GET_EVENT_PACKET_FRAME_NUM: {
 				fbin.read(reinterpret_cast<char*>(&word32b), sizeof(word32b));
 				if (debug) cout << "GET_EVENT_PACKET_FRAME_NUM: " << "0x" << uppercase << hex << word32b << endl;
-				unsigned int eventPacketFrameNum = ((word32b & 0xFFF) << 12) | ((word32b >> 16) & 0xFFF);
-				fems[currFEMSlot]->setEventFrameNum(eventPacketFrameNum);
-				state = STATE::GET_ADC_WORD_CHECKSUM;
+				if (((word32b >> 28) == 0xF) && (((word32b >> 12) & 0xF) == 0xF)) {
+					unsigned int eventPacketFrameNum = ((word32b & 0xFFF) << 12) | ((word32b >> 16) & 0xFFF);
+					fems[currFEMSlot]->setEventFrameNum(eventPacketFrameNum);
+					state = STATE::GET_ADC_WORD_CHECKSUM;
+				}
+				else {
+					fems[currFEMSlot]->setFEMSlot(0xFFFF);
+					state = STATE::WAIT_FEM_HEADER;
+				}
 				break;
 			}
 		  case STATE::GET_ADC_WORD_CHECKSUM: {
 				fbin.read(reinterpret_cast<char*>(&word32b), sizeof(word32b));
 				if (debug) cout << "GET_ADC_WORD_CHECKSUM: " << "0x" << uppercase << hex << word32b << endl;
-				unsigned int adcChecksumTrue = ((word32b & 0xFFF) << 12) | ((word32b >> 16) & 0xFFF);
-				fems[currFEMSlot]->setADCChecksumTrue(adcChecksumTrue);
-				state = STATE::GET_SAMPLE_NUM;
+				if (((word32b >> 28) == 0xF) && (((word32b >> 12) & 0xF) == 0xF)) {
+					unsigned int adcChecksumTrue = ((word32b & 0xFFF) << 12) | ((word32b >> 16) & 0xFFF);
+					fems[currFEMSlot]->setADCChecksumTrue(adcChecksumTrue);
+					state = STATE::GET_SAMPLE_NUM;
+				}
+				else {
+					fems[currFEMSlot]->setFEMSlot(0xFFFF);
+					state = STATE::WAIT_FEM_HEADER;
+				}
 				break;
 			}
 		  case STATE::GET_SAMPLE_NUM: {
 				fbin.read(reinterpret_cast<char*>(&word32b), sizeof(word32b));
 				if (debug) cout << "GET_SAMPLE_NUM: " << "0x" << uppercase << hex << word32b << endl;
-				unsigned short sampleNum = ((word32b & 0xF) << 8) | ((word32b >> 16) & 0xFF);
-				unsigned int trigFrameNum = (fems[currFEMSlot]->getEventFrameNum() & (~0xF)) | ((word32b >> 4) & 0xF);
-				fems[currFEMSlot]->setSampleNum(sampleNum);
-				fems[currFEMSlot]->setTrigFrameNum(trigFrameNum);
-				state = STATE::WAIT_CHANNEL_START;
+				if (((word32b >> 28) == 0xF) && (((word32b >> 12) & 0xF) == 0xF)) {
+					unsigned short sampleNum = ((word32b & 0xF) << 8) | ((word32b >> 16) & 0xFF);
+					unsigned int trigFrameNum = (fems[currFEMSlot]->getEventFrameNum() & (~0xF)) | ((word32b >> 4) & 0xF);
+					fems[currFEMSlot]->setSampleNum(sampleNum);
+					fems[currFEMSlot]->setTrigFrameNum(trigFrameNum);
+					state = STATE::WAIT_CHANNEL_START;
+				}
+				else {
+					fems[currFEMSlot]->setFEMSlot(0xFFFF);
+					state = STATE::WAIT_FEM_HEADER;
+				}
 				break;
 			}
 			case STATE::WAIT_CHANNEL_START: {
@@ -309,7 +339,14 @@ int main(int argc, char* argv[]) {
 				if (debug) cout << "GET_FEM_HEADER_L: " << "0x" << uppercase << hex << word16b << endl;
 				fems[currFEMSlot]->setADCCntReco(currADCWordCnt);
 				fems[currFEMSlot]->setADCChecksumReco(currADCChecksum);
-				if (word16b == 0xFFFF) state = STATE::WAIT_FEM_HEADER;
+				if (word16b == 0xFFFF) {
+					event->Fill();
+					++eventID;
+					eventEndMiss = true;
+					allFEMHeaderMiss = true;
+					for (auto& fem : fems) fem.second->setFEMSlot(0xFFFF);
+					state = STATE::WAIT_FEM_HEADER;
+				}
 				else if ((word16b >> 12) == 0xF) {
 					currFEMSlot = word16b & 0x1F;
 					if ((currFEMSlot > 2) && (currFEMSlot < 19)) {
