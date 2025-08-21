@@ -10,8 +10,8 @@ from writeToLog import *
 
 if __name__ == "__main__":
     args = parseArguments()
-    froot = uproot.open(args.root)
-    logname = os.path.splitext(args.root)[0] + '.log'
+    froot = uproot.open(args.file)
+    logname = os.path.splitext(args.file)[0] + '.log'
     print("Input log file: ", logname)
     flog = open(logname, 'a')
 
@@ -27,11 +27,14 @@ if __name__ == "__main__":
     logFEMHeaderMiss(tree, frameNums, 'NU', femBranches, femSlots, flog, writeLog=args.write, printTerm=args.print, printDF=args.print)
     if args.write: print("Logged: FEM Header Miss Metric")
     
-    logFrameNumMetric(tree, frameNums, femBranches, femSlots, flog, writeLog=args.write, printTerm=args.print, printDF=args.print)
+    logEventNumMetric(tree, frameNums, femBranches, femSlots, flog, writeLog=args.write, printTerm=args.print, printDF=args.print)
     if args.write: print("Logged: First Frame Numbers Metric")
     if args.write: print("Logged: Last Frame Numbers Metric")
     if args.write: print("Logged: Frame Number Difference Error Metric")
     if args.write: print("Logged: Frame Number Rollover Metric")
+
+    logADCWordCntErr(tree, 'NU', femBranches, femSlots, flog, writeLog=args.write, printTerm=args.print)
+    if args.write: print("Logged: ADC Word Count Difference Error Metric")
 
     logChannelMissNU(tree, femBranches, femSlots, flog, args.write, args.print)
     if args.write: print("Logged: Channel Start Miss Metric")

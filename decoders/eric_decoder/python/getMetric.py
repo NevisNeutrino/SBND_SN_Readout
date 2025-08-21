@@ -62,7 +62,7 @@ def getEventNumMetric(tree, eventNums, femBranches, femSlots):
         nanNumPadCnt = nEvent - len(nums)
         if nanNumPadCnt > 0: 
             slots = np.concatenate((np.full(nanNumPadCnt, 65535), slots))
-            nums = np.concatenate((np.full(nFrameNumPad, np.nan), nums))
+            nums = np.concatenate((np.full(nanNumPadCnt, np.nan), nums))
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
 
@@ -111,7 +111,7 @@ def getFrameNumMetric(tree, frameNums, femBranches, femSlots):
         nanNumPadCnt = nFrame - len(nums)
         if nanNumPadCnt > 0: 
             slots = np.concatenate((np.full(nanNumPadCnt, 65535), slots))
-            nums = np.concatenate((np.full(nFrameNumPad, np.nan), nums))
+            nums = np.concatenate((np.full(nanNumPadCnt, np.nan), nums))
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
 
@@ -148,7 +148,7 @@ def getFrameNumMetric(tree, frameNums, femBranches, femSlots):
     return firstFrameNums, lastFrameNums, frameNumDiffDict, frameNumRolloverDict
 
 
-def getADCWordCntErr(tree, dataType, femBranches, femSlots):
+def getADCWordCnt(tree, dataType, femBranches, femSlots):
     if dataType == 'NU': numType = 'eventNum_'
     elif dataType == 'SN': numType = 'frameNum_'
 
@@ -162,19 +162,15 @@ def getADCWordCntErr(tree, dataType, femBranches, femSlots):
 
         slots = tree[slotBranch].array(library='np')
         nums = tree[numBranch].array(library='np')
-        trueCnts = tree[adcCntTrueBranch].array(library='np')
-        recoCnts = tree[adcCntRecoBranch].array(library='np')
+        trueCnts = tree[adcCntTrueBranch].array(library='np').astype(np.int64)
+        recoCnts = tree[adcCntRecoBranch].array(library='np').astype(np.int64)
 
         nums = nums[slots != 65535]
         trueCnts = trueCnts[slots != 65535]
         recoCnts = recoCnts[slots != 65535]
-        diffs = trueCnts - recoCnts
+        diffs = recoCnts - trueCnts
 
-        nums = nums[diffs != 0]
-        diffs = diffs[diffs != 0]
-        nDiffErr = len(nums)
-        if nDiffErr > 0:
-            femDict[slot] = list(zip(nums, diffs))
+        femDict[slot] = pd.DataFrame({numBranch: nums, f"{branch}/adcCntDiff_": diffs})
 
     return femDict
 

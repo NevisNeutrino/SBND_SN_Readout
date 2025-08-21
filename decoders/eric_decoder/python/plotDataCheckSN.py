@@ -15,9 +15,9 @@ from getMetric import *
 
 if __name__ == "__main__":
     args = parseArguments()
-    froot = uproot.open(args.root)
+    froot = uproot.open(args.file)
     if args.save:
-        pdfname = os.path.splitext(args.root)[0] + '.pdf'
+        pdfname = os.path.splitext(args.file)[0] + '.pdf'
         print("Output pdf file: ", pdfname)
         fpdf = PdfPages(pdfname)
 
@@ -180,6 +180,43 @@ if __name__ == "__main__":
     if args.save: 
         fpdf.savefig()
         print("Plot saved: Frame Number Rollover Metric")
+    if args.show: plt.show()
+    plt.clf()
+
+    plt.figure(figsize=(12, 6))
+
+    femDict = getADCWordCnt(tree, 'SN', femBranches, femSlots)
+    slots = []
+    data = []
+    for slot, df in femDict.items():
+        slots.append(slot)
+        data.append(df[f"fem{slot}/adcCntDiff_"])
+    flatten = [diff for diffs in data for diff in diffs]
+    if len(flatten) == 0: bins = 1
+    else: 
+        bins = [((min(flatten) // 100) * 100), -10]
+        bins.extend(range(-9, (max(flatten) + 2)))
+    counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
+    edges = np.arange(len(bins))
+    bottoms = np.zeros_like(counts[0])
+    for slot, cnt in zip(slots, counts):
+        plt.bar(edges[:-1], cnt, width=1, align='edge', edgecolor='black', bottom=bottoms, label=f"FEM {slot}")
+        bottoms += cnt
+    centers = (edges[:-1] + edges[1:]) / 2
+    for x, y in zip(centers, bottoms):
+        plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=16)
+    plt.ylim(top=(max(bottoms) * 1.1))
+    #plt.yscale('symlog')
+    plt.title("ADC Word Count Difference Metric")
+    plt.xticks(edges, bins)
+    plt.xlabel("ADC word count difference")
+    plt.ylabel("Number of frames")
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    if args.save: 
+        fpdf.savefig()
+        print("Plot saved: ADC Word Count Difference Metric")
     if args.show: plt.show()
     plt.clf()
 

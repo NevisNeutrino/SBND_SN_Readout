@@ -76,7 +76,7 @@ def logEventNumMetric(tree, eventNums, femBranches, femSlots, logFile, writeLog=
         nanNumPadCnt = nEvent - len(nums)
         if nanNumPadCnt > 0: 
             slots = np.concatenate((np.full(nanNumPadCnt, 65535), slots))
-            nums = np.concatenate((np.full(nFrameNumPad, np.nan), nums))
+            nums = np.concatenate((np.full(nanNumPadCnt, np.nan), nums))
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
 
@@ -115,7 +115,7 @@ def logEventNumMetric(tree, eventNums, femBranches, femSlots, logFile, writeLog=
         
         if eventNumDiffErrCnt > 0:
             diffs = dfSlot.loc[eventNumDiffErr, diffBranch].to_numpy()
-            diffs = ", ".join(str(int(num)) for num in diffs)
+            diffs = ", ".join(str(int(diff)) for diff in diffs)
             nums = dfSlot.loc[eventNumDiffErr, numBranch].to_numpy()
             nums = ", ".join(str(int(num)) for num in nums)
 
@@ -160,7 +160,7 @@ def logFrameNumMetric(tree, frameNums, femBranches, femSlots, logFile, writeLog=
         nanNumPadCnt = nFrame - len(nums)
         if nanNumPadCnt > 0: 
             slots = np.concatenate((np.full(nanNumPadCnt, 65535), slots))
-            nums = np.concatenate((np.full(nFrameNumPad, np.nan), nums))
+            nums = np.concatenate((np.full(nanNumPadCnt, np.nan), nums))
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
 
@@ -199,7 +199,7 @@ def logFrameNumMetric(tree, frameNums, femBranches, femSlots, logFile, writeLog=
         
         if frameNumDiffErrCnt > 0:
             diffs = dfSlot.loc[frameNumDiffErr, diffBranch].to_numpy()
-            diffs = ", ".join(str(int(num)) for num in diffs)
+            diffs = ", ".join(str(int(diff)) for diff in diffs)
             nums = dfSlot.loc[frameNumDiffErr, numBranch].to_numpy()
             nums = ", ".join(str(int(num)) for num in nums)
 
@@ -248,15 +248,16 @@ def logADCWordCntErr(tree, dataType, femBranches, femSlots, logFile, writeLog=Fa
         recoCnts = tree[adcCntRecoBranch].array(library='np')
 
         nums = nums[slots != 65535]
-        trueCnts = trueCnts[slots != 65535]
-        recoCnts = recoCnts[slots != 65535]
-        diffs = trueCnts - recoCnts
+        trueCnts = tree[adcCntTrueBranch].array(library='np').astype(np.int64)
+        recoCnts = tree[adcCntRecoBranch].array(library='np').astype(np.int64)
+        diffs = recoCnts - trueCnts
 
         nums = nums[diffs != 0]
         diffs = diffs[diffs != 0]
         nDiffErr = len(nums)
         if nDiffErr > 0:
             nums = ", ".join(str(int(num)) for num in nums)
+            diffs = ", ".join(str(int(diff)) for diff in diffs)
             if writeLog:
                 print(f"Number of ADC word count mismatches for FEM {slot}: {nDiffErr}", file=logFile)
                 if dataType == 'NU':

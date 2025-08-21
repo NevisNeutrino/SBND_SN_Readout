@@ -13,14 +13,14 @@ def parseArguments():
         return file
 
     parser = argparse.ArgumentParser(description="")
-    parser.add_argument('--root', type=checkFile, required=True, help="input root file")
+    parser.add_argument('--file', type=checkFile, required=True, help="input root file")
     parser.add_argument('--write', action='store_true', help="enable write to log file")
     parser.add_argument('--print', action='store_true', help="enable print to terminal")
     parser.add_argument('--save', action='store_true', help="save plots to pdf file")
     parser.add_argument('--show', action='store_true', help="show plots")
 
     args = parser.parse_args()
-    print("Input root file: ", args.root)
+    print("Input root file: ", args.file)
 
     return args
 
