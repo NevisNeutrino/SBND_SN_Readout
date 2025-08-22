@@ -244,12 +244,12 @@ def logADCWordCntErr(tree, dataType, femBranches, femSlots, logFile, writeLog=Fa
 
         slots = tree[slotBranch].array(library='np')
         nums = tree[numBranch].array(library='np')
-        trueCnts = tree[adcCntTrueBranch].array(library='np')
-        recoCnts = tree[adcCntRecoBranch].array(library='np')
-
-        nums = nums[slots != 65535]
         trueCnts = tree[adcCntTrueBranch].array(library='np').astype(np.int64)
         recoCnts = tree[adcCntRecoBranch].array(library='np').astype(np.int64)
+
+        nums = nums[slots != 65535]
+        trueCnts = trueCnts[slots != 65535]
+        recoCnts = recoCnts[slots != 65535]
         diffs = recoCnts - trueCnts
 
         nums = nums[diffs != 0]
