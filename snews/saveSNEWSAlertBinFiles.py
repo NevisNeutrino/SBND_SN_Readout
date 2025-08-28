@@ -40,7 +40,7 @@ def listenForExit(stopServer):
 
 if __name__ == "__main__":
     args = parseArguments()
-    logfile = open(args.log, 'a')
+    logfile = open(args.log, 'a', buffering=1)
 
     context = zmq.Context()
     zmqSubSocket = context.socket(zmq.SUB)

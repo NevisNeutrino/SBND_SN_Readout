@@ -46,7 +46,7 @@ def getTimestamp(filename):
 
 if __name__ == "__main__":
     args = parseArguments()
-    logfile = open(args.log, 'a')
+    logfile = open(args.log, 'a', buffering=1)
     
     context = zmq.Context()
 
