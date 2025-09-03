@@ -83,7 +83,7 @@ if __name__ == "__main__":
                 for filename in os.listdir(args.direc):
                     if ((filename.endswith('SN.dat')) and (os.path.isfile(os.path.join(args.direc, filename)))):
                         filepath = os.path.join(args.direc, filename)
-                        filetime = datetime.fromtimestamp(os.path.getmtime(filepath))
+                        filetime = datetime.utcfromtimestamp(os.path.getmtime(filepath))
                         if startTimestamp <= filetime <= endTimestamp:
                             print(f"- {filetime}: {filepath} saved")
                             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: - {filetime}: {filepath} saved", file=logfile)
