@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import argparse
 import socket
 import zmq
@@ -65,6 +66,7 @@ if __name__ == "__main__":
 
     if checkConnection(args.host, args.port):
         zmqPushSocket.connect(f"tcp://{args.host}:{args.port}")
+        time.sleep(1)
     else:
         print(f"Can't connect to {args.host} on port {args.port}")
         sys.exit(1)

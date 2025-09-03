@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import argparse
 import socket
 import zmq
@@ -49,12 +50,14 @@ if __name__ == "__main__":
     port = 7901
     if checkConnection(host, port):
         zmqSubSocket.connect(f"tcp://{host}:{port}")
+        time.sleep(1)
     else:
         print(f"Can't connect to {host} on port {port}")
         print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Can't connect to {host} on port {port}", file=logfile)
         sys.exit(1)
 
     zmqSubSocket.setsockopt_string(zmq.SUBSCRIBE, "")
+    time.sleep(1)
 
     stopServer = threading.Event()
     threading.Thread(target=listenForExit, args=(stopServer,), daemon=True).start()

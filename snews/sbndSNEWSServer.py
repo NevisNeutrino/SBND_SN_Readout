@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import argparse
 import zmq
 import threading
@@ -55,6 +56,8 @@ if __name__ == "__main__":
 
     zmqPubSocket = context.socket(zmq.PUB)
     zmqPubSocket.bind(f"tcp://*:7901")
+
+    time.sleep(1)
 
     stopServer = threading.Event()
     threading.Thread(target=listenForExit, args=(stopServer,), daemon=True).start()
