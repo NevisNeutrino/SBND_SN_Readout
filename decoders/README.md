@@ -1,4 +1,4 @@
-# Serial Number Decoder
+# Binary File Decoder
 
 Decodes a serial number from an input file and prints the result.
 
