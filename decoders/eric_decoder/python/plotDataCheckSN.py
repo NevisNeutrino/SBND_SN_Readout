@@ -133,20 +133,33 @@ if __name__ == "__main__":
         print("Plot saved: Last Frame Numbers Metric")
     if args.show: plt.show()
     plt.clf()
+    slots = []
     data = []
     for slot, df in frameNumDiffDict.items():
+        slots.append(slot)
         data.append(df[f"fem{slot}/frameNumDiff_"])
     flatten = [diff for diffs in data for diff in diffs]
     if len(flatten) == 0: bins = 1
-    else: bins = range(0, (int(max(flatten)) + 2))
-    counts, edges, _ = plt.hist(data, bins=bins, stacked=True, label=[f"FEM {slot}" for slot in frameNumDiffDict], edgecolor='black')
-    heights = counts.max(axis=0)
+    else:
+        high = int(max(flatten))
+        bins = list(range(0, 6))
+        labels = list(range(0, 5))
+        if high > max(bins): 
+            bins.append(high)
+            labels.append('overflow')
+    counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
+    edges = np.arange(len(bins))
+    bottoms = np.zeros_like(counts[0])
+    for slot, cnt in zip(slots, counts):
+        plt.bar(edges[:-1], cnt, width=1, align='edge', edgecolor='black', bottom=bottoms, label=f"FEM {slot}")
+        bottoms += cnt
     centers = (edges[:-1] + edges[1:]) / 2
-    for x, y in zip(centers, heights):
-        plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=20)
-    plt.ylim(top=(max(heights) * 1.1))
+    for x, y in zip(centers, bottoms):
+        plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=16)
+    plt.ylim(top=(max(bottoms) * 1.1))
     #plt.yscale('symlog')
     plt.title("Frame Number Difference Metric")
+    plt.xticks(centers, labels)
     plt.xlabel("Frame number difference")
     plt.ylabel("Number of frames")
     plt.grid(True)
@@ -162,7 +175,7 @@ if __name__ == "__main__":
         data.append(df[f"fem{slot}/frameNumRollover_"])
     flatten = [rollover for rollovers in data for rollover in rollovers]
     if len(flatten) == 0: bins = 1
-    else: bins = range(0, (int(max(flatten)) + 2))
+    else: bins = np.linspace(0, max(flatten), 10)
     counts, edges, _ = plt.hist(data, bins=bins, stacked=True, label=[f"FEM {slot}" for slot in frameNumRolloverDict], edgecolor='black')
     heights = counts.max(axis=0)
     centers = (edges[:-1] + edges[1:]) / 2
@@ -193,9 +206,17 @@ if __name__ == "__main__":
         data.append(df[f"fem{slot}/adcCntDiff_"])
     flatten = [diff for diffs in data for diff in diffs]
     if len(flatten) == 0: bins = 1
-    else: 
-        bins = [((min(flatten) // 100) * 100), -10]
-        bins.extend(range(-9, (max(flatten) + 2)))
+    else:
+        low = int(min(flatten))
+        high = int(max(flatten))
+        bins = list(range(-3, 5))
+        labels = list(range(-3, 4))
+        if low < min(bins): 
+            bins.insert(0, low)
+            labels.insert(0, 'underflow')
+        if high > max(bins): 
+            bins.append(high)
+            labels.append('overflow')
     counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
     edges = np.arange(len(bins))
     bottoms = np.zeros_like(counts[0])
@@ -208,7 +229,7 @@ if __name__ == "__main__":
     plt.ylim(top=(max(bottoms) * 1.1))
     #plt.yscale('symlog')
     plt.title("ADC Word Count Difference Metric")
-    plt.xticks(edges, bins)
+    plt.xticks(centers, labels)
     plt.xlabel("ADC word count difference")
     plt.ylabel("Number of frames")
     plt.grid(True)
