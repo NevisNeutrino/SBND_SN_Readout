@@ -14,7 +14,18 @@ from utils import *
 from getMetric import *
 
 if __name__ == "__main__":
-    args = parseArguments()
+    try:
+        args = parseArguments()
+    except argparse.ArgumentTypeError as err:
+        print(err)
+        sys.exit(1)
+
+    try:
+        run, subfile, tpc = getFileInfo(args.file)
+    except ValueError as err:
+        print(err)
+        sys.exit(1)
+
     froot = uproot.open(args.file)
     if args.save:
         pdfname = os.path.splitext(args.file)[0] + '.pdf'
@@ -62,22 +73,22 @@ if __name__ == "__main__":
     x = [0, 1]
     y = [(nEvent - nEventEndMiss), nEventEndMiss]
     labels = [
-        f"Total number of frames = {sum(y)}",
-        f"Number of frames with Event End = {y[0]}",
-        f"Number of frames without Event End = {y[1]}"
+        f"Total number of packet frames = {sum(y)}",
+        f"Number of packet frames with Packet Frame End = {y[0]}",
+        f"Number of packet frames without Packet Frame End = {y[1]}"
     ]
     handles = [Patch(facecolor='none', edgecolor='none', label=label) for label in labels]
     plt.bar(x, y, width=1.0, align='center', edgecolor='black', linewidth=2.0)
     plt.yscale('log')
-    plt.title("Event End Miss Metric")
-    plt.xticks(x, ["Event End Exist", "Event End Miss"])
-    plt.ylabel("Number of frames")
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Packet Frame End Miss")
+    plt.xticks(x, ["Packet Frame End Exist", "Packet Frame End Miss"])
+    plt.ylabel("Number of packet frames")
     plt.grid(True)
     plt.legend(handles=handles, loc='upper right', frameon=True, handlelength=0, handletextpad=0.)
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
-        print("Plot saved: Event End Miss Metric")
+        print("Plot saved: Packet Frame End Miss Metric")
     if args.show: plt.show()
     plt.clf()
 
@@ -91,11 +102,17 @@ if __name__ == "__main__":
         else: y.append(0)
         labels.append(slot)
     plt.bar(x, y, width=1.0, align='center', edgecolor='black', linewidth=2.0)
-    plt.title("FEM Header Miss Metric")
+    plt.ylim(top=(max(y) * 1.1))
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: FEM Header Miss")
     plt.xticks(x, labels)
     plt.xlabel("FEM slot")
-    plt.ylabel("Number of frames")
+    plt.ylabel("Number of missing FEM headers")
     plt.grid(True)
+    labels = [
+        f"Total number of packet frames = {nEvent}",
+    ]
+    handles = [Patch(facecolor='none', edgecolor='none', label=label) for label in labels]
+    plt.legend(handles=handles, loc='upper right', frameon=True, handlelength=0, handletextpad=0.)
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
@@ -104,33 +121,15 @@ if __name__ == "__main__":
     plt.clf()
     
     firstFrameNums, lastFrameNums, frameNumDiffDict, frameNumRolloverDict = getFrameNumMetric(tree, frameNums, femBranches, femSlots)
-    indices = []
-    labels = []
-    for idx, slot in enumerate(femSlots):
-        indices.append(idx)
-        labels.append(slot)
-    plt.bar(indices, firstFrameNums, width=1.0, align='center', edgecolor='black', linewidth=2.0)
-    plt.title("First Frame Numbers Metric")
-    plt.xticks(indices, labels)
-    plt.xlabel("FEM slot")
-    plt.ylabel("Frame number")
-    plt.grid(True)
+    df = pd.DataFrame({'FEM Slot': femSlots, 'First Packet Frame Number': firstFrameNums, 'Last Packet Frame Number': lastFrameNums})
+    df = df.astype(int).astype(str)
+    plt.table(cellText=df.values, colLabels=df.columns, loc='center')
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: First and Last Packet Frame Number")
+    plt.axis('off')
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
-        print("Plot saved: First Frame Numbers Metric")
-    if args.show: plt.show()
-    plt.clf()
-    plt.bar(indices, lastFrameNums, width=1.0, align='center', edgecolor='black', linewidth=2.0)
-    plt.title("Last Frame Numbers Metric")
-    plt.xticks(indices, labels)
-    plt.xlabel("FEM slot")
-    plt.ylabel("Frame number")
-    plt.grid(True)
-    plt.tight_layout()
-    if args.save: 
-        fpdf.savefig()
-        print("Plot saved: Last Frame Numbers Metric")
+        print("Table saved: First and Last Packet Frame Numbers Metric")
     if args.show: plt.show()
     plt.clf()
     slots = []
@@ -139,14 +138,13 @@ if __name__ == "__main__":
         slots.append(slot)
         data.append(df[f"fem{slot}/frameNumDiff_"])
     flatten = [diff for diffs in data for diff in diffs]
-    if len(flatten) == 0: bins = 1
-    else:
-        high = int(max(flatten))
-        bins = list(range(0, 6))
-        labels = list(range(0, 5))
-        if high > max(bins): 
-            bins.append(high)
-            labels.append('overflow')
+    if len(flatten) == 0: flatten = [0]
+    high = int(max(flatten))
+    bins = list(range(0, 6))
+    labels = list(range(0, 5))
+    if high > max(bins): bins.append(high)
+    else: bins.append((max(bins) + 1))
+    labels.append('overflow')
     counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
     edges = np.arange(len(bins))
     bottoms = np.zeros_like(counts[0])
@@ -156,43 +154,54 @@ if __name__ == "__main__":
     centers = (edges[:-1] + edges[1:]) / 2
     for x, y in zip(centers, bottoms):
         plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=16)
-    plt.ylim(top=(max(bottoms) * 1.1))
+    if max(bottoms) == 0: bottoms += 1
+    plt.ylim(bottom=0, top=(max(bottoms) * 1.1))
     #plt.yscale('symlog')
-    plt.title("Frame Number Difference Metric")
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Packet Frame Number Difference")
     plt.xticks(centers, labels)
     plt.xlabel("Frame number difference")
-    plt.ylabel("Number of frames")
+    plt.ylabel("Frequency")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
-        print("Plot saved: Frame Number Difference Metric")
+        print("Plot saved: Packet Frame Number Difference Metric")
     if args.show: plt.show()
     plt.clf()
     data = []
     for slot, df in frameNumRolloverDict.items():
         data.append(df[f"fem{slot}/frameNumRollover_"])
     flatten = [rollover for rollovers in data for rollover in rollovers]
-    if len(flatten) == 0: bins = 1
-    else: bins = np.linspace(0, max(flatten), 10)
-    counts, edges, _ = plt.hist(data, bins=bins, stacked=True, label=[f"FEM {slot}" for slot in frameNumRolloverDict], edgecolor='black')
-    heights = counts.max(axis=0)
+    if len(flatten) == 0: flatten = [0]
+    high = int(max(flatten))
+    bins = list(range(0, 6))
+    labels = list(range(0, 5))
+    if high > max(bins): bins.append(high)
+    else: bins.append((max(bins) + 1))
+    labels.append('overflow')
+    counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
+    edges = np.arange(len(bins))
+    bottoms = np.zeros_like(counts[0])
+    for slot, cnt in zip(slots, counts):
+        plt.bar(edges[:-1], cnt, width=1, align='edge', edgecolor='black', bottom=bottoms, label=f"FEM {slot}")
+        bottoms += cnt
     centers = (edges[:-1] + edges[1:]) / 2
-    if max(heights) > 0:
-        for x, y in zip(centers, heights):
-            plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=20)
-        plt.ylim(top=(max(heights) * 1.1))
+    for x, y in zip(centers, bottoms):
+        plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=16)
+    if max(bottoms) == 0: bottoms += 1
+    plt.ylim(bottom=0, top=(max(bottoms) * 1.1))
     #plt.yscale('symlog')
-    plt.title("Frame Number Rollover Metric")
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Packet Frame Number Rollover")
+    plt.xticks(centers, labels)
     plt.xlabel("Frame number rollover")
-    plt.ylabel("Number of frames")
+    plt.ylabel("Frequency")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
-        print("Plot saved: Frame Number Rollover Metric")
+        print("Plot saved: Packet Frame Number Rollover Metric")
     if args.show: plt.show()
     plt.clf()
 
@@ -211,12 +220,12 @@ if __name__ == "__main__":
         high = int(max(flatten))
         bins = list(range(-3, 5))
         labels = list(range(-3, 4))
-        if low < min(bins): 
-            bins.insert(0, low)
-            labels.insert(0, 'underflow')
-        if high > max(bins): 
-            bins.append(high)
-            labels.append('overflow')
+        if low < min(bins): bins.insert(0, low)
+        else: bins.insert(0, (min(bins)-1))
+        labels.insert(0, 'underflow')
+        if high > max(bins): bins.append(high)
+        else: bins.append((max(bins) + 1))
+        labels.append('overflow')
     counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
     edges = np.arange(len(bins))
     bottoms = np.zeros_like(counts[0])
@@ -228,10 +237,10 @@ if __name__ == "__main__":
         plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=16)
     plt.ylim(top=(max(bottoms) * 1.1))
     #plt.yscale('symlog')
-    plt.title("ADC Word Count Difference Metric")
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: ADC Word Count Difference")
     plt.xticks(centers, labels)
     plt.xlabel("ADC word count difference")
-    plt.ylabel("Number of frames")
+    plt.ylabel("Number of packet frames")
     plt.grid(True)
     plt.legend()
     plt.tight_layout()
@@ -242,19 +251,22 @@ if __name__ == "__main__":
     plt.clf()
 
     plt.figure(figsize=(18, 6))
+    cmap = plt.cm.viridis
+    cmap.set_bad(color='white')
 
     chStartMissDict = results['getChannelStartMissSN']
     data = np.array([
         [len(chStartMissDict[x][y]) if y in chStartMissDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
-    plt.imshow(data.T, cmap='viridis', aspect='auto')
-    plt.title("Channel Start Miss Metric")
+    masked_data = np.ma.masked_less(data, 1)
+    plt.imshow(masked_data.T, cmap=cmap, vmin=0, aspect='auto')
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Channel Start Miss")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
     plt.xlabel("Channel number")
     plt.ylabel("FEM slot")
-    plt.colorbar(label="Number of frames")
+    plt.colorbar(label="Frequency")
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
@@ -267,13 +279,14 @@ if __name__ == "__main__":
         [len(roiStartMissCntDict[x][y]) if y in roiStartMissCntDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
-    plt.imshow(data.T, cmap='viridis', aspect='auto')
-    plt.title("ROI Start Miss Metric")
+    masked_data = np.ma.masked_less(data, 1)
+    plt.imshow(masked_data.T, cmap=cmap, vmin=0, aspect='auto')
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: ROI Start Miss")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
     plt.xlabel("Channel number")
     plt.ylabel("FEM slot")
-    plt.colorbar(label="Number of ROIs")
+    plt.colorbar(label="Number of missed ROI starts")
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
@@ -284,13 +297,14 @@ if __name__ == "__main__":
         [len(roiEndMissCntDict[x][y]) if y in roiEndMissCntDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
-    plt.imshow(data.T, cmap='viridis', aspect='auto')
-    plt.title("ROI End Miss Metric")
+    masked_data = np.ma.masked_less(data, 1)
+    plt.imshow(masked_data.T, cmap=cmap, vmin=0, aspect='auto')
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: ROI End Miss")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
     plt.xlabel("Channel number")
     plt.ylabel("FEM slot")
-    plt.colorbar(label="Number of ROIs")
+    plt.colorbar(label="Number of missed ROI ends")
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
@@ -300,12 +314,12 @@ if __name__ == "__main__":
 
     dfROI = results['getROICntAveSN']
     plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
-    plt.title("Average Number of ROIs Metric")
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Average Number of ROIs")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
     plt.xlabel("Channel number")
     plt.ylabel("FEM slot")
-    plt.colorbar(label="Average number of ROIs")
+    plt.colorbar(label="Number of ROIs per packet frame")
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
@@ -315,12 +329,12 @@ if __name__ == "__main__":
 
     dfROI = results['getROIBaselineAveSN']
     plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
-    plt.title("Average ROI Baseline Metric")
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Average ROI Baseline")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
     plt.xlabel("Channel number")
     plt.ylabel("FEM slot")
-    plt.colorbar(label="Average ROI baseline")
+    plt.colorbar(label="Average ROI baseline (ADC counts)")
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()
@@ -330,12 +344,12 @@ if __name__ == "__main__":
 
     dfROI = results['getROIAmplAveSN']
     plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
-    plt.title("Average ROI Amplitude Metric")
+    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Average ROI Amplitude")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
     plt.xlabel("Channel number")
     plt.ylabel("FEM slot")
-    plt.colorbar(label="Average ROI amplitude")
+    plt.colorbar(label="Average ROI amplitude (ADC counts)")
     plt.tight_layout()
     if args.save: 
         fpdf.savefig()

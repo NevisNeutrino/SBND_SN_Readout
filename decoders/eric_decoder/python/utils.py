@@ -24,6 +24,22 @@ def parseArguments():
 
     return args
 
+def getFileInfo(filename):
+    match = re.search(r"run0*(\d+).*_subfile(\d+)_TPC(\d+)", filename)
+
+    if match:
+        run = int(match.group(1))
+        subfile = int(match.group(2))
+        tpc = match.group(3)
+    
+        print("Run: ", run)
+        print("Subfile: ", subfile)
+        print("TPC crate: ", tpc)
+
+        return run, subfile, tpc
+    else:
+        raise ValueError("Filename format not recognized")
+
 def getFEMs(tree):
     branches = np.array(tree.keys())
     mask = np.char.find(branches, 'fem') >= 0
