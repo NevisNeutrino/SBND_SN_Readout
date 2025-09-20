@@ -19,7 +19,7 @@ def logEventEndMiss(tree, numArr, dataType, logFile, writeLog=False, printTerm=F
 
     if nEventEndMiss > 0:
         eventEndMiss = df.loc[df['eventEndMiss'], numType].tolist()
-        nums = ", ".join(str(int(num)) for num in eventEndMiss)
+        nums = ", ".join(str(int(num)) for num in eventEndMiss if not np.isnan(num))
         if writeLog:
             if dataType == 'NU': print(f"Event numbers with missing event end: {nums}", file=logFile)
             elif dataType == 'SN': print(f"Frame numbers with missing event end: {nums}", file=logFile)
