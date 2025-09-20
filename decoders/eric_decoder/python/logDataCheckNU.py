@@ -9,15 +9,30 @@ from utils import *
 from writeToLog import *
 
 if __name__ == "__main__":
-    args = parseArguments()
+    try:
+        args = parseArguments()
+    except argparse.ArgumentTypeError as err:
+        print(err)
+        sys.exit(1)
+
     froot = uproot.open(args.file)
     logname = os.path.splitext(args.file)[0] + '.log'
     print("Input log file: ", logname)
     flog = open(logname, 'a')
 
+    try:
+        run, tpc = getFileInfo(args.file)
+    except ValueError as err:
+        print(err)
+        sys.exit(1)
+
+    print(f"Run: {run}", file=flog)
+    print(f"TPC Crate: {tpc}", file=flog)
+
     tree = froot["events"]
     femBranches, femSlots = getFEMs(tree)
     print(f"FEM slots: {femSlots}")
+    print(f"FEM slots: {femSlots}", file=flog)
 
     frameNums = getFrameNums(tree)
 
@@ -28,10 +43,9 @@ if __name__ == "__main__":
     if args.write: print("Logged: FEM Header Miss Metric")
     
     logEventNumMetric(tree, frameNums, femBranches, femSlots, flog, writeLog=args.write, printTerm=args.print, printDF=args.print)
-    if args.write: print("Logged: First Frame Numbers Metric")
-    if args.write: print("Logged: Last Frame Numbers Metric")
-    if args.write: print("Logged: Frame Number Difference Error Metric")
-    if args.write: print("Logged: Frame Number Rollover Metric")
+    if args.write: print("Logged: First and Last Event Frame Numbers Metric")
+    if args.write: print("Logged: Event Frame Number Difference Error Metric")
+    if args.write: print("Logged: Event Frame Number Rollover Metric")
 
     logADCWordCntErr(tree, 'NU', femBranches, femSlots, flog, writeLog=args.write, printTerm=args.print)
     if args.write: print("Logged: ADC Word Count Difference Error Metric")

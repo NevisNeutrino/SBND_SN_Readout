@@ -20,17 +20,17 @@ if __name__ == "__main__":
         print(err)
         sys.exit(1)
 
-    try:
-        run, subfile, tpc = getFileInfo(args.file)
-    except ValueError as err:
-        print(err)
-        sys.exit(1)
-
     froot = uproot.open(args.file)
     if args.save:
         pdfname = os.path.splitext(args.file)[0] + '.pdf'
         print("Output pdf file: ", pdfname)
         fpdf = PdfPages(pdfname)
+
+    try:
+        run, subfile, tpc = getFileInfo(args.file)
+    except ValueError as err:
+        print(err)
+        sys.exit(1)
 
     tree = froot["events"]
     femBranches, femSlots = getFEMs(tree)
@@ -159,7 +159,7 @@ if __name__ == "__main__":
     #plt.yscale('symlog')
     plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Packet Frame Number Difference")
     plt.xticks(centers, labels)
-    plt.xlabel("Frame number difference")
+    plt.xlabel("Packet frame number difference")
     plt.ylabel("Frequency")
     plt.grid(True)
     plt.legend()
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     #plt.yscale('symlog')
     plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Packet Frame Number Rollover")
     plt.xticks(centers, labels)
-    plt.xlabel("Frame number rollover")
+    plt.xlabel("Packet frame number rollover")
     plt.ylabel("Frequency")
     plt.grid(True)
     plt.legend()
@@ -214,18 +214,17 @@ if __name__ == "__main__":
         slots.append(slot)
         data.append(df[f"fem{slot}/adcCntDiff_"])
     flatten = [diff for diffs in data for diff in diffs]
-    if len(flatten) == 0: bins = 1
-    else:
-        low = int(min(flatten))
-        high = int(max(flatten))
-        bins = list(range(-3, 5))
-        labels = list(range(-3, 4))
-        if low < min(bins): bins.insert(0, low)
-        else: bins.insert(0, (min(bins)-1))
-        labels.insert(0, 'underflow')
-        if high > max(bins): bins.append(high)
-        else: bins.append((max(bins) + 1))
-        labels.append('overflow')
+    if len(flatten) == 0: flatten = [0]
+    low = int(min(flatten))
+    high = int(max(flatten))
+    bins = list(range(-3, 5))
+    labels = list(range(-3, 4))
+    if low < min(bins): bins.insert(0, low)
+    else: bins.insert(0, (min(bins)-1))
+    labels.insert(0, 'underflow')
+    if high > max(bins): bins.append(high)
+    else: bins.append((max(bins) + 1))
+    labels.append('overflow')
     counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
     edges = np.arange(len(bins))
     bottoms = np.zeros_like(counts[0])
@@ -259,8 +258,8 @@ if __name__ == "__main__":
         [len(chStartMissDict[x][y]) if y in chStartMissDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
-    masked_data = np.ma.masked_less(data, 1)
-    plt.imshow(masked_data.T, cmap=cmap, vmin=0, aspect='auto')
+    data = np.ma.masked_less(data, 1)
+    plt.imshow(data.T, cmap=cmap, vmin=0, aspect='auto')
     plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Channel Start Miss")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
@@ -279,8 +278,8 @@ if __name__ == "__main__":
         [len(roiStartMissCntDict[x][y]) if y in roiStartMissCntDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
-    masked_data = np.ma.masked_less(data, 1)
-    plt.imshow(masked_data.T, cmap=cmap, vmin=0, aspect='auto')
+    data = np.ma.masked_less(data, 1)
+    plt.imshow(data.T, cmap=cmap, vmin=0, aspect='auto')
     plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: ROI Start Miss")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
@@ -297,8 +296,8 @@ if __name__ == "__main__":
         [len(roiEndMissCntDict[x][y]) if y in roiEndMissCntDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
-    masked_data = np.ma.masked_less(data, 1)
-    plt.imshow(masked_data.T, cmap=cmap, vmin=0, aspect='auto')
+    data = np.ma.masked_less(data, 1)
+    plt.imshow(data.T, cmap=cmap, vmin=0, aspect='auto')
     plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: ROI End Miss")
     plt.xticks(ticks=chNums, labels=chNums)
     plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)

@@ -53,7 +53,7 @@ def logFEMHeaderMiss(tree, numArr, dataType, femBranches, femSlots, logFile, wri
         numBranch = branch + '/' + numType
         nums = df.loc[pd.isna(df[numBranch]), numType].tolist()
         if len(nums) > 0:
-            nums = ", ".join(str(int(num)) for num in nums)
+            nums = ", ".join(str(int(num)) for num in nums if not np.isnan(num))
             if writeLog:
                 print(f"Number of FEM header missing for FEM {slot}: {len(nums)}", file=logFile)
                 if dataType == 'NU': print(f"Event numbers with missing FEM header for FEM {slot}: {nums}", file=logFile)
