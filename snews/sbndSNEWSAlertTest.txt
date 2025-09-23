@@ -4,7 +4,7 @@ Coincidence rating: GOLD
 Alarms in the coincidence:
 Experiment: 5 LVD
 Level: OVERRIDE 
-Time: Aug 15 2025 11:45:00.000000000
+Time: Sep 23 2025 13:13:00.000000000
 Duration:   10.00
 No. of signal events:    0.00
 Right Ascension:    0.00
@@ -13,7 +13,7 @@ Error:  360.10
 - ---------------------------------------------
 Experiment: 7 Borexino
 Level: GOOD 
-Time: Aug 15 2025 11:45:00.000000000
+Time: Sep 23 2025 13:13:00.000000000
 Duration:   10.00
 No. of signal events:    0.00
 Right Ascension:    0.00
@@ -22,7 +22,7 @@ Error:  360.10
 - ---------------------------------------------
 Experiment: 1 Super-K
 Level: POSSIBLE 
-Time: Aug 15 2025 11:45:00.000000000
+Time: Sep 23 2025 13:13:00.000000000
 Duration:   10.00
 No. of signal events:    0.00
 Right Ascension:    0.00

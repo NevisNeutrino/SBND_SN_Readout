@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import subprocess
 import argparse
 import socket
 import zmq
@@ -39,6 +40,18 @@ def listenForExit(stopServer):
             stopServer.set()
             break
 
+def fileTransfer(file, host, path):
+    hostname = subprocess.check_output(['hostname'], text=True).strip()
+    match = re.search(r'tpc(\d+)', hostname)
+    if match:
+        tpc = match.group(1)
+        path = path + "/TPC" + tpc
+        command = ['rsync', '-z', '--ignore-existing', file, f"{host}:{path}"]
+        status = subprocess.run(command, capture_output=True, text=True)
+        return status
+    else:
+        raise ValueError("Could not extract TPC server number from hostname")
+
 if __name__ == "__main__":
     args = parseArguments()
     logfile = open(args.log, 'a', buffering=1)
@@ -46,7 +59,7 @@ if __name__ == "__main__":
     context = zmq.Context()
     zmqSubSocket = context.socket(zmq.SUB)
 
-    host = 'sbnd-tpc15.fnal.gov'
+    host = 'sbnd-tpc13-daq'
     port = 7901
     if checkConnection(host, port):
         zmqSubSocket.connect(f"tcp://{host}:{port}")
@@ -85,8 +98,23 @@ if __name__ == "__main__":
                         filepath = os.path.join(args.direc, filename)
                         filetime = datetime.utcfromtimestamp(os.path.getmtime(filepath))
                         if startTimestamp <= filetime <= endTimestamp:
-                            print(f"- {filetime}: {filepath} saved")
-                            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: - {filetime}: {filepath} saved", file=logfile)
+                            print(f"Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...")
+                            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=logfile)
+                            try:
+                                status = fileTransfer(filepath, host, f"/data/SNEWSAlert/{message[-1]}")
+                                if status.returncode == 0:
+                                    print("File transfer completed successfully")
+                                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer completed successfully", file=logfile)
+                                else:
+                                    print("File transfer failed")
+                                    print("Error output:\n", status.stderr)
+                                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer failed", file=logfile)
+                                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", status.stderr, file=logfile)
+                            except ValueError as err:
+                                print("File transfer failed")
+                                print("Error output:\n", err)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer failed", file=logfile)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", err, file=logfile)
         except zmq.Again:
             pass
 

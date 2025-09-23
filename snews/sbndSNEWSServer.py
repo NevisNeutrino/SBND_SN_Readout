@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import subprocess
 import argparse
 import zmq
 import threading
@@ -62,6 +63,8 @@ if __name__ == "__main__":
     stopServer = threading.Event()
     threading.Thread(target=listenForExit, args=(stopServer,), daemon=True).start()
 
+    path = '/data/SNEWSAlert'
+
     print(f"Listening to SNEWS alerts on port 7910. Type 'exit' to stop.")
     print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Listening to SNEWS alerts on port 7910. Type 'exit' to stop.", file=logfile)
 
@@ -80,26 +83,33 @@ if __name__ == "__main__":
                 message = f"TEST ALERT: {timestamp}"
 
                 zmqPubSocket.send_string(message)
-                print(f"Published TEST alert timestamp to port 7901: {timestamp}")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published TEST alert timestamp to port 7901: {timestamp}", file=logfile)
+                print(f"Published TEST alert timestamp to port 7901: {datetime.strptime(timestamp, '%Y.%m.%d.%H.%M.%S')}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published TEST alert timestamp to port 7901: {datetime.strptime(timestamp, '%Y.%m.%d.%H.%M.%S')}", file=logfile)
             else:
                 print(f"Received SNEWS alert from port 7910")
                 print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Received SNEWS alert from port 7910", file=logfile)
 
-                filename = "/data/snewsAlerts/" + data[0].decode(errors='replace')
+                tempname = path + "/" + data[0].decode(errors='replace')
                 content = data[1].decode('utf-8', errors='replace')
 
-                with open(f"{filename}", 'w', encoding='utf-8') as file:
+                with open(f"{tempname}", 'w', encoding='utf-8') as file:
                     file.write(content)
+
+                timestamp = getTimestamp(tempname)
+
+                filename = os.path.join(path, f"{timestamp}.txt")
+                subprocess.run(['mv', tempname, filename], capture_output=True, text=True)
                 print(f"Saved SNEWS alert in {filename}")
                 print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saved SNEWS alert in {filename}", file=logfile)
 
-                timestamp = getTimestamp(filename)
-                message = f"SNEWS ALERT: {timestamp}"
+                subprocess.run(['mkdir', f"{path}/{timestamp}"], capture_output=True, text=True)
+                for tpc in range(1, 12):
+                    subprocess.run(['mkdir', f"{path}/{timestamp}/TPC{tpc:02}"], capture_output=True, text=True)
 
+                message = f"SNEWS ALERT: {timestamp}"
                 zmqPubSocket.send_string(message)
-                print(f"Published SNEWS alert timestamp to port 7901: {timestamp}")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published SNEWS alert timestamp to port 7901: {timestamp}", file=logfile)
+                print(f"Published SNEWS alert timestamp to port 7901: {datetime.strptime(timestamp, '%Y.%m.%d.%H.%M.%S')}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published SNEWS alert timestamp to port 7901: {datetime.strptime(timestamp, '%Y.%m.%d.%H.%M.%S')}", file=logfile)
         except UnicodeDecodeError:
             print("Could not decode {filename}")
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Could not decode {filename}", file=logfile)
