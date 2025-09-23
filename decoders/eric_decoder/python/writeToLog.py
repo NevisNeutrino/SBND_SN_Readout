@@ -11,7 +11,7 @@ def logEventEndMiss(tree, numArr, dataType, logFile, writeLog=False, printTerm=F
     df = tree.arrays(['eventID', 'eventEndMiss'], library='pd')
     df[numType] = numArr
 
-    if (printDF): display(df)
+    if (printDF): print(df)
 
     nEventEndMiss = df['eventEndMiss'].sum()
     if writeLog: print(f"Number of event end missing: {nEventEndMiss}", file=logFile)
@@ -47,7 +47,7 @@ def logFEMHeaderMiss(tree, numArr, dataType, femBranches, femSlots, logFile, wri
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
     
-    if (printDF): display(df)
+    if (printDF): print(df)
 
     for branch, slot in zip(femBranches, femSlots):
         numBranch = branch + '/' + numType
@@ -80,7 +80,7 @@ def logEventNumMetric(tree, eventNums, femBranches, femSlots, logFile, writeLog=
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
 
-    if (printDF): display(df)
+    if (printDF): print(df)
 
     firstEventNums = df.apply(lambda fem: fem[fem.first_valid_index()]).values
     lastEventNums = df.apply(lambda fem: fem[fem.last_valid_index()]).values
@@ -164,7 +164,7 @@ def logFrameNumMetric(tree, frameNums, femBranches, femSlots, logFile, writeLog=
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
 
-    if (printDF): display(df)
+    if (printDF): print(df)
 
     firstFrameNums = df.apply(lambda fem: fem[fem.first_valid_index()]).values
     lastFrameNums = df.apply(lambda fem: fem[fem.last_valid_index()]).values
