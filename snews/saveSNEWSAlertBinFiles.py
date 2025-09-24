@@ -40,17 +40,19 @@ def listenForExit(stopServer):
             stopServer.set()
             break
 
-def fileTransfer(file, host, path):
+def getTPCServer():
     hostname = subprocess.check_output(['hostname'], text=True).strip()
     match = re.search(r'tpc(\d+)', hostname)
     if match:
         tpc = match.group(1)
-        path = path + "/TPC" + tpc
-        command = ['rsync', '-z', '--ignore-existing', file, f"{host}:{path}"]
-        status = subprocess.run(command, capture_output=True, text=True)
-        return status
+        return tpc
     else:
         raise ValueError("Could not extract TPC server number from hostname")
+
+def transferFile(file, host, path):
+    command = ['rsync', '-z', '--ignore-existing', file, f"{host}:{path}"]
+    status = subprocess.run(command, capture_output=True, text=True)
+    return status
 
 if __name__ == "__main__":
     args = parseArguments()
@@ -75,23 +77,38 @@ if __name__ == "__main__":
     stopServer = threading.Event()
     threading.Thread(target=listenForExit, args=(stopServer,), daemon=True).start()
 
+    path = '/data/SNEWSAlert'
+
     print(f"Subscribed to SNEWS alert timestamps from {host} on port {port}. Type 'exit' to stop.")
     print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Subscribed to SNEWS alert timestamps from {host} on port {port}. Type 'exit' to stop.", file=logfile)
+
+    try:
+        tpc = getTPCServer()
+    except ValueError as err:
+        print(err)
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {err}", file=logfile)
+        logfile.close()
+        sys.exit(1)
 
     while not stopServer.is_set():
         try:
             message = zmqSubSocket.recv_string(flags=zmq.NOBLOCK)
             message = message.split()
+ 
+            text = f"{args.direc}/tpc{tpc}.txt"
+            email = open(text, 'w', buffering=1)
 
             alertTimestamp = datetime.strptime(message[-1], "%Y.%m.%d.%H.%M.%S")
             print(f"{message[0]} alert received with timestamp: {alertTimestamp}")
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message[0]} alert received with timestamp: {alertTimestamp}", file=logfile)
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message[0]} alert received with timestamp: {alertTimestamp}", file=email)
 
             if message[0] == "SNEWS":
                 startTimestamp = alertTimestamp - timedelta(minutes=10)
                 endTimestamp = alertTimestamp + timedelta(minutes=50)
                 print(f"Saving files in time window: {startTimestamp} -> {endTimestamp}")
                 print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saving files in time window: {startTimestamp} -> {endTimestamp}", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saving files in time window: {startTimestamp} -> {endTimestamp}", file=email)
 
                 for filename in os.listdir(args.direc):
                     if ((filename.endswith('SN.dat')) and (os.path.isfile(os.path.join(args.direc, filename)))):
@@ -100,21 +117,35 @@ if __name__ == "__main__":
                         if startTimestamp <= filetime <= endTimestamp:
                             print(f"Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...")
                             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=logfile)
-                            try:
-                                status = fileTransfer(filepath, host, f"/data/SNEWSAlert/{message[-1]}")
-                                if status.returncode == 0:
-                                    print("File transfer completed successfully")
-                                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer completed successfully", file=logfile)
-                                else:
-                                    print("File transfer failed")
-                                    print("Error output:\n", status.stderr)
-                                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer failed", file=logfile)
-                                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", status.stderr, file=logfile)
-                            except ValueError as err:
+                            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=email)
+
+                            status = transferFile(filepath, host, f"{path}/{message[-1]}/TPC{tpc}")
+                            if status.returncode == 0:
+                                print("File transfer completed successfully")
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer completed successfully", file=logfile)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer completed successfully", file=email)
+                            else:
                                 print("File transfer failed")
-                                print("Error output:\n", err)
+                                print("Error output:\n", status.stderr)
                                 print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer failed", file=logfile)
-                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", err, file=logfile)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", status.stderr, file=logfile)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer failed", file=email)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", status.stderr, file=email)
+
+            email.close()
+            status = transferFile(text, host, path)
+            if status.returncode == 0:
+                print("Notification transfer completed successfully")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Notification transfer completed successfully", file=logfile)
+                subprocess.run(['rm', text], capture_output=True, text=True)
+            else:
+                print("Notification transfer failed")
+                print("Error output:\n", status.stderr)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Notification transfer failed", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", status.stderr, file=logfile)
+        except UnicodeDecodeError:
+            print("Could not decode message")
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Could not decode message", file=logfile)
         except zmq.Again:
             pass
 
