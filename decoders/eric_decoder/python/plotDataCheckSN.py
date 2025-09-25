@@ -80,6 +80,7 @@ if __name__ == "__main__":
     handles = [Patch(facecolor='none', edgecolor='none', label=label) for label in labels]
     plt.bar(x, y, width=1.0, align='center', edgecolor='black', linewidth=2.0)
     plt.yscale('log')
+    plt.ylim(top=(max(y) * 1.05))
     plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Packet Frame End Miss")
     plt.xticks(x, ["Packet Frame End Exist", "Packet Frame End Miss"])
     plt.ylabel("Number of packet frames")
@@ -122,7 +123,7 @@ if __name__ == "__main__":
     
     firstFrameNums, lastFrameNums, frameNumDiffDict, frameNumRolloverDict = getFrameNumMetric(tree, frameNums, femBranches, femSlots)
     df = pd.DataFrame({'FEM Slot': femSlots, 'First Packet Frame Number': firstFrameNums, 'Last Packet Frame Number': lastFrameNums})
-    df = df.astype(int).astype(str)
+    df = df.astype(object).apply(lambda col: col.map(lambda x: str(int(x)) if pd.notna(x) else 'nan'))
     plt.table(cellText=df.values, colLabels=df.columns, loc='center')
     plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: First and Last Packet Frame Number")
     plt.axis('off')
@@ -255,7 +256,7 @@ if __name__ == "__main__":
 
     chStartMissDict = results['getChannelStartMissSN']
     data = np.array([
-        [len(chStartMissDict[x][y]) if y in chStartMissDict[x] else 0 for x in femSlots]
+        [len(chStartMissDict[x][y]) if x in chStartMissDict and y in chStartMissDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
     data = np.ma.masked_less(data, 1)
@@ -275,7 +276,7 @@ if __name__ == "__main__":
 
     roiStartMissCntDict, roiEndMissCntDict = results['getROIMissCntSN']
     data = np.array([
-        [len(roiStartMissCntDict[x][y]) if y in roiStartMissCntDict[x] else 0 for x in femSlots]
+        [len(roiStartMissCntDict[x][y]) if x in roiStartMissCntDict and y in roiStartMissCntDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
     data = np.ma.masked_less(data, 1)
@@ -293,7 +294,7 @@ if __name__ == "__main__":
     if args.show: plt.show()
     plt.clf()
     data = np.array([
-        [len(roiEndMissCntDict[x][y]) if y in roiEndMissCntDict[x] else 0 for x in femSlots]
+        [len(roiEndMissCntDict[x][y]) if x in roiEndMissCntDict and y in roiEndMissCntDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
     data = np.ma.masked_less(data, 1)

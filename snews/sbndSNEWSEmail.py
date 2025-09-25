@@ -37,8 +37,7 @@ def checkNotifications(path):
     if not (os.path.isfile(f"{path}/tpc13.txt")):
         return False
 
-    #files = [os.path.join(path, f"tpc{tpc:02}.txt") for tpc in range(1, 12)]
-    files = [os.path.join(path, f"tpc{tpc:02}.txt") for tpc in range(2, 3)]
+    files = [os.path.join(path, f"tpc{tpc:02}.txt") for tpc in range(1, 12)]
 
     if not all(os.path.isfile(file) for file in files):
         return False
@@ -101,8 +100,7 @@ if __name__ == "__main__":
                         alert = "SNEWS"
                     outFile.write(content)
 
-                #for tpc in range(1, 12):
-                for tpc in range(2, 3):
+                for tpc in range(1, 12):
                     outFile.write('\n')
                     outFile.write('-' * 179)
                     outFile.write(f"\nsbnd-tpc{tpc:02}.fnal.gov\n")

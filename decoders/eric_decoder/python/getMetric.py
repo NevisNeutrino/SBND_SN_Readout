@@ -115,8 +115,8 @@ def getFrameNumMetric(tree, frameNums, femBranches, femSlots):
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
 
-    firstFrameNums = df.apply(lambda fem: fem[fem.first_valid_index()]).values
-    lastFrameNums = df.apply(lambda fem: fem[fem.last_valid_index()]).values
+    firstFrameNums = df.apply(lambda fem: fem[fem.first_valid_index()] if fem.first_valid_index() is not None else None).values
+    lastFrameNums = df.apply(lambda fem: fem[fem.last_valid_index()] if fem.last_valid_index() is not None else None).values
 
     frameNumDiffAllowed = set(range(1, 6))
     frameNumRolloverThres = 16777215 # 0xFFFFFF

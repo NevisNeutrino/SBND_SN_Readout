@@ -53,6 +53,7 @@ if __name__ == "__main__":
     handles = [Patch(facecolor='none', edgecolor='none', label=label) for label in labels]
     plt.bar(x, y, width=1.0, align='center', edgecolor='black', linewidth=2.0)
     plt.yscale('log')
+    plt.ylim(top=(max(y) * 1.05))
     plt.title(f"Run: {run}, TPC Crate: {tpc}, Metric: Event End Miss")
     plt.xticks(x, ["Event End Exist", "Event End Miss"])
     plt.ylabel("Number of events")
@@ -95,7 +96,7 @@ if __name__ == "__main__":
     
     firstEventNums, lastEventNums, eventNumDiffDict, eventNumRolloverDict = getEventNumMetric(tree, eventNums, femBranches, femSlots)
     df = pd.DataFrame({'FEM Slot': femSlots, 'First Event Frame Number': firstEventNums, 'Last Event Frame Number': lastEventNums})
-    df = df.astype(int).astype(str)
+    df = df.astype(object).apply(lambda col: col.map(lambda x: str(int(x)) if pd.notna(x) else 'nan'))
     plt.table(cellText=df.values, colLabels=df.columns, loc='center')
     plt.title(f"Run: {run}, TPC Crate: {tpc}, Metric: First and Last Event Frame Number")
     plt.axis('off')
@@ -227,7 +228,7 @@ if __name__ == "__main__":
 
     chStartMissDict chEndMissDict = getChannelMissNUtree, femBranches, femSlots)
     data = np.array([
-        [len(chStartMissDict[x][y]) if y in chStartMissDict[x] else 0 for x in femSlots]
+        [len(chStartMissDict[x][y]) if x in chStartMissDict and y in chStartMissDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
     data = np.ma.masked_less(data, 1)
@@ -245,7 +246,7 @@ if __name__ == "__main__":
     if args.show: plt.show()
     plt.clf()
     data = np.array([
-        [len(chEndMissDict[x][y]) if y in chEndMissDict[x] else 0 for x in femSlots]
+        [len(chEndMissDict[x][y]) if x in chEndMissDict and y in chEndMissDict[x] else 0 for x in femSlots]
         for y in chNums
     ])
     data = np.ma.masked_less(data, 1)
