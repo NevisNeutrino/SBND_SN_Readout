@@ -37,3 +37,7 @@ Run on BNL server and send alerts to ZeroMQ server at SBND
 python saveSNEWSAlertBinFiles.py --log <log_file> --direc <sn_files_directory>
 Type 'exit' to stop
 ```
+
+## Specific to SBND servers
+- Location: `/home/nfs/sbnd/SBND_SN_Readout/snews
+- Python venv: `home/nfx/sbnd/snews_env`
