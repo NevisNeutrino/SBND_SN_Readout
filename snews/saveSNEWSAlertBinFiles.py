@@ -68,7 +68,7 @@ if __name__ == "__main__":
         time.sleep(1)
     else:
         print(f"Can't connect to {host} on port {port}")
-        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Can't connect to {host} on port {port}", file=logfile)
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Can't connect to {host} on port {port}", file=logfile)
         sys.exit(1)
 
     zmqSubSocket.setsockopt_string(zmq.SUBSCRIBE, "")
@@ -77,16 +77,18 @@ if __name__ == "__main__":
     stopServer = threading.Event()
     threading.Thread(target=listenForExit, args=(stopServer,), daemon=True).start()
 
+    localTZ = datetime.now().astimezone().tzinfo
+
     path = '/data/SNEWSAlert'
 
     print(f"Subscribed to SNEWS alert timestamps from {host} on port {port}. Type 'exit' to stop.")
-    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Subscribed to SNEWS alert timestamps from {host} on port {port}. Type 'exit' to stop.", file=logfile)
+    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Subscribed to SNEWS alert timestamps from {host} on port {port}. Type 'exit' to stop.", file=logfile)
 
     try:
         tpc = getTPCServer()
     except ValueError as err:
         print(err)
-        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {err}", file=logfile)
+        print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: {err}", file=logfile)
         logfile.close()
         sys.exit(1)
 
@@ -99,16 +101,16 @@ if __name__ == "__main__":
             email = open(text, 'w', buffering=1)
 
             alertTimestamp = datetime.strptime(" ".join(message[-2:]), '%Y-%m-%d %H:%M:%S')
-            print(f"{message[0]} alert received with timestamp: {alertTimestamp}")
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message[0]} alert received with timestamp: {alertTimestamp}", file=logfile)
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message[0]} alert received with timestamp: {alertTimestamp}", file=email)
+            print(f"{message[0]} alert received with timestamp: {alertTimestamp} {localTZ}")
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: {message[0]} alert received with timestamp: {alertTimestamp} {localTZ}", file=logfile)
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: {message[0]} alert received with timestamp: {alertTimestamp} {localTZ}", file=email)
 
             if message[0] == "SNEWS":
                 startTimestamp = alertTimestamp - timedelta(minutes=10)
                 endTimestamp = alertTimestamp + timedelta(minutes=50)
-                print(f"Saving files in time window: {startTimestamp} -> {endTimestamp}")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saving files in time window: {startTimestamp} -> {endTimestamp}", file=logfile)
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saving files in time window: {startTimestamp} -> {endTimestamp}", file=email)
+                print(f"Saving files in time window: {startTimestamp} {localTZ} -> {endTimestamp} {localTZ}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Saving files in time window: {startTimestamp} {localTZ} -> {endTimestamp} {localTZ}", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Saving files in time window: {startTimestamp} {localTZ} -> {endTimestamp} {localTZ}", file=email)
 
                 for filename in os.listdir(args.direc):
                     if ((filename.endswith('SN.dat')) and (os.path.isfile(os.path.join(args.direc, filename)))):
@@ -116,37 +118,37 @@ if __name__ == "__main__":
                         filetime = datetime.fromtimestamp(os.path.getctime(filepath))
                         if startTimestamp <= filetime <= endTimestamp:
                             print(f"Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...")
-                            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=logfile)
-                            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=email)
+                            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=logfile)
+                            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=email)
 
                             folder = alertTimestamp.strftime('%Y.%m.%d.%H.%M.%S')
                             status = transferFile(filepath, host, f"{path}/{folder}/TPC{tpc}")
                             if status.returncode == 0:
                                 print("File transfer completed successfully")
-                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer completed successfully", file=logfile)
-                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer completed successfully", file=email)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: File transfer completed successfully", file=logfile)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: File transfer completed successfully", file=email)
                             else:
                                 print("File transfer failed")
                                 print("Error output:\n", status.stderr)
-                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer failed", file=logfile)
-                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", status.stderr, file=logfile)
-                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer failed", file=email)
-                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", status.stderr, file=email)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: File transfer failed", file=logfile)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Error output:\n", status.stderr, file=logfile)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: File transfer failed", file=email)
+                                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Error output:\n", status.stderr, file=email)
 
             email.close()
             status = transferFile(text, host, path)
             if status.returncode == 0:
                 print("Notification transfer completed successfully")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Notification transfer completed successfully", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Notification transfer completed successfully", file=logfile)
                 subprocess.run(['rm', text], capture_output=True, text=True)
             else:
                 print("Notification transfer failed")
                 print("Error output:\n", status.stderr)
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Notification transfer failed", file=logfile)
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", status.stderr, file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Notification transfer failed", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Error output:\n", status.stderr, file=logfile)
         except UnicodeDecodeError:
             print("Could not decode message")
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Could not decode message", file=logfile)
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Could not decode message", file=logfile)
         except zmq.Again:
             pass
 

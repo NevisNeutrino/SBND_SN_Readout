@@ -64,10 +64,12 @@ if __name__ == "__main__":
     stopServer = threading.Event()
     threading.Thread(target=listenForExit, args=(stopServer,), daemon=True).start()
 
+    localTZ = datetime.now().astimezone().tzinfo
+
     path = '/data/SNEWSAlert'
 
     print(f"Listening to SNEWS alerts on port 7910. Type 'exit' to stop.")
-    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Listening to SNEWS alerts on port 7910. Type 'exit' to stop.", file=logfile)
+    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Listening to SNEWS alerts on port 7910. Type 'exit' to stop.", file=logfile)
 
     while not stopServer.is_set():
         try:
@@ -77,8 +79,8 @@ if __name__ == "__main__":
 
             if len(data) == 1:
                 print(f"Received TEST alert from port 7910")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Received TEST alert from port 7910", file=logfile)
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Received TEST alert from port 7910", file=email)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Received TEST alert from port 7910", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Received TEST alert from port 7910", file=email)
 
                 content = data[0].decode('utf-8', errors='replace')
 
@@ -87,13 +89,13 @@ if __name__ == "__main__":
                 message = f"TEST ALERT: {timestamp}"
 
                 zmqPubSocket.send_string(message)
-                print(f"Published TEST alert timestamp to port 7901: {timestamp}")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published TEST alert timestamp to port 7901: {timestamp}", file=logfile)
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published TEST alert timestamp to port 7901: {timestamp}", file=email)
+                print(f"Published TEST alert timestamp to port 7901: {timestamp} {localTZ}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Published TEST alert timestamp to port 7901: {timestamp} {localTZ}", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Published TEST alert timestamp to port 7901: {timestamp} {localTZ}", file=email)
             else:
                 print(f"Received SNEWS alert from port 7910")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Received SNEWS alert from port 7910", file=logfile)
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Received SNEWS alert from port 7910", file=email)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Received SNEWS alert from port 7910", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Received SNEWS alert from port 7910", file=email)
 
                 tempname = path + "/" + data[0].decode(errors='replace')
                 content = data[1].decode('utf-8', errors='replace')
@@ -108,29 +110,29 @@ if __name__ == "__main__":
                 filename = os.path.join(path, f"{folder}.txt")
                 subprocess.run(['mv', tempname, filename], capture_output=True, text=True)
                 print(f"Saved SNEWS alert in {filename}")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saved SNEWS alert in {filename}", file=logfile)
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Saved SNEWS alert in {filename}", file=email)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Saved SNEWS alert in {filename}", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Saved SNEWS alert in {filename}", file=email)
 
                 subprocess.run(['mkdir', f"{path}/{folder}"], capture_output=True, text=True)
                 print(f"Created {path}/{folder}")
-                print(f"Created {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {path}/{folder}", file=logfile)
-                print(f"Created {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {path}/{folder}", file=email)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Created {path}/{folder}", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Created {path}/{folder}", file=email)
                 for tpc in range(1, 12):
                     subprocess.run(['mkdir', f"{path}/{folder}/TPC{tpc:02}"], capture_output=True, text=True)
                     print(f"Created {path}/{folder}/TPC{tpc:02}")
-                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Created {path}/{folder}/TPC{tpc:02}", file=logfile)
-                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Created {path}/{folder}/TPC{tpc:02}", file=email)
+                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Created {path}/{folder}/TPC{tpc:02}", file=logfile)
+                    print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Created {path}/{folder}/TPC{tpc:02}", file=email)
 
                 message = f"SNEWS ALERT: {timestamp}"
                 zmqPubSocket.send_string(message)
-                print(f"Published SNEWS alert timestamp to port 7901: {timestamp}")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published SNEWS alert timestamp to port 7901: {timestamp}", file=logfile)
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Published SNEWS alert timestamp to port 7901: {timestamp}", file=email)
+                print(f"Published SNEWS alert timestamp to port 7901: {timestamp} {localTZ}")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Published SNEWS alert timestamp to port 7901: {timestamp} {localTZ}", file=logfile)
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Published SNEWS alert timestamp to port 7901: {timestamp} {localTZ}", file=email)
 
             email.close()
         except UnicodeDecodeError:
             print("Could not decode message")
-            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Could not decode message", file=logfile)
+            print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')} {localTZ}: Could not decode message", file=logfile)
         except zmq.Again:
             pass
 
