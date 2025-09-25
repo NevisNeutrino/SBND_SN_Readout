@@ -66,8 +66,8 @@ def getEventNumMetric(tree, eventNums, femBranches, femSlots):
         nums[slots == 65535] = np.nan
         df[numBranch] = nums
 
-    firstEventNums = df.apply(lambda fem: fem[fem.first_valid_index()]).values
-    lastEventNums = df.apply(lambda fem: fem[fem.last_valid_index()]).values
+    firstEventNums = df.apply(lambda fem: fem[fem.first_valid_index()] if fem.first_valid_index() is not None else None).values
+    lastEventNums = df.apply(lambda fem: fem[fem.last_valid_index()] if fem.last_valid_index() is not None else None).values
 
     eventNumDiffAllowed = 1
     eventNumRolloverThres = 16777215 # 0xFFFFFF
