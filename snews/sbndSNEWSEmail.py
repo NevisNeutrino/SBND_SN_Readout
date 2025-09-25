@@ -37,8 +37,7 @@ def checkNotifications(path):
     if not (os.path.isfile(f"{path}/tpc13.txt")):
         return False
 
-    #files = [os.path.join(path, f"tpc{tpc:02}.txt") for tpc in range(1, 12)]
-    files = [os.path.join(path, f"tpc{tpc:02}.txt") for tpc in range(2, 3)]
+    files = [os.path.join(path, f"tpc{tpc:02}.txt") for tpc in range(1, 12)]
 
     if not all(os.path.isfile(file) for file in files):
         return False
@@ -93,12 +92,13 @@ if __name__ == "__main__":
                     content = inFile.read()
                     if "Received TEST alert from port 7910" in content:
                         subject = "TEST Alert Received from SBND SNEWS Alert System"
+                        alert = "TEST"
                     elif "Received SNEWS alert from port 7910" in content:
                         subject = "SNEWS Alert Received from SBND SNEWS Alert System!!! PLEASE CONTACT TPC EXPERTS!!!"
+                        alert = "SNEWS"
                     outFile.write(content)
 
-                #for tpc in range(1, 12):
-                for tpc in range(2, 3):
+                for tpc in range(1, 12):
                     outFile.write('\n')
                     outFile.write('-' * 179)
                     outFile.write(f"\nsbnd-tpc{tpc:02}.fnal.gov\n")
@@ -125,14 +125,14 @@ if __name__ == "__main__":
                 with smtplib.SMTP('localhost') as server:
                     server.sendmail(sender, receiver, email.as_string())
                     server.quit()
-                print(f"Email notification to {channel} slack channel at {now} completed successfully")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Email notification to {channel} slack channel at {now} completed successfully", file=logfile)
+                print(f"{alert} alert email notification to {channel} slack channel at {now} completed successfully")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {alert} alert email notification to {channel} slack channel at {now} completed successfully", file=logfile)
 
                 files = glob.glob(f"{path}/tpc*txt")
                 result = subprocess.run(['rm'] + files, capture_output=True, text=True)
             except Exception as err:
-                print(f"Email notification to {channel} slack channel at {now} failed")
-                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Email notification to {channel} slack channel at {now} failed", file=logfile)
+                print(f"{alert} alert email notification to {channel} slack channel at {now} failed")
+                print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {alert} alert email notification to {channel} slack channel at {now} failed", file=logfile)
                 print("Error output:\n", err)
                 print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Error output:\n", err, file=logfile)
         else:

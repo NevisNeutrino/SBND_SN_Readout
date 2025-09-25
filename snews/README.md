@@ -38,6 +38,14 @@ python saveSNEWSAlertBinFiles.py --log <log_file> --direc <sn_files_directory>
 Type 'exit' to stop
 ```
 
+### Notifier:
+- Run on sbnd-tpc13.fnal.gov (SN processing server)
+- Send email notification to slack channel when either TEST or SNEWS alert is received
+```
+python sbndSNEWSEmail.py --log <log_file> --test(send email notification to #sbnd_test_channel if set, otherwise to #sbnd-shift-operations) 
+Type 'exit' to stop
+```
+
 ## Specific to SBND servers
 - Location: `/home/nfs/sbnd/SBND_SN_Readout/snews`
 - Python venv: `/home/nfs/sbnd/snews_env`

@@ -98,7 +98,7 @@ if __name__ == "__main__":
             text = f"{args.direc}/tpc{tpc}.txt"
             email = open(text, 'w', buffering=1)
 
-            alertTimestamp = datetime.strptime(message[-1], "%Y.%m.%d.%H.%M.%S")
+            alertTimestamp = datetime.strptime(" ".join(message[-2:]), '%Y-%m-%d %H:%M:%S')
             print(f"{message[0]} alert received with timestamp: {alertTimestamp}")
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message[0]} alert received with timestamp: {alertTimestamp}", file=logfile)
             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: {message[0]} alert received with timestamp: {alertTimestamp}", file=email)
@@ -113,13 +113,14 @@ if __name__ == "__main__":
                 for filename in os.listdir(args.direc):
                     if ((filename.endswith('SN.dat')) and (os.path.isfile(os.path.join(args.direc, filename)))):
                         filepath = os.path.join(args.direc, filename)
-                        filetime = datetime.utcfromtimestamp(os.path.getmtime(filepath))
+                        filetime = datetime.fromtimestamp(os.path.getctime(filepath))
                         if startTimestamp <= filetime <= endTimestamp:
                             print(f"Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...")
                             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=logfile)
                             print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: Transferring {filepath} to {host.replace('-daq', '.fnal.gov')} ...", file=email)
 
-                            status = transferFile(filepath, host, f"{path}/{message[-1]}/TPC{tpc}")
+                            folder = alertTimestamp.strftime('%Y.%m.%d.%H.%M.%S')
+                            status = transferFile(filepath, host, f"{path}/{folder}/TPC{tpc}")
                             if status.returncode == 0:
                                 print("File transfer completed successfully")
                                 print(f"{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}: File transfer completed successfully", file=logfile)
