@@ -39,5 +39,5 @@ Type 'exit' to stop
 ```
 
 ## Specific to SBND servers
-- Location: `/home/nfs/sbnd/SBND_SN_Readout/snews
+- Location: `/home/nfs/sbnd/SBND_SN_Readout/snews`
 - Python venv: `home/nfx/sbnd/snews_env`
