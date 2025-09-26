@@ -70,7 +70,7 @@ def getEventNumMetric(tree, eventNums, femBranches, femSlots):
     lastEventNums = df.apply(lambda fem: fem[fem.last_valid_index()] if fem.last_valid_index() is not None else None).values
 
     eventNumDiffAllowed = 1
-    eventNumRolloverThres = 16777215 # 0xFFFFFF
+    eventNumRolloverThres = 16777216 # 0xFFFFFF + 0x1
 
     eventNumDiffDict = {}
     eventNumRolloverDict = {}
