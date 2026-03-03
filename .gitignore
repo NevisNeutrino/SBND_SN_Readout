@@ -3,3 +3,7 @@ fpga
 DecoderTools
 data
 decoders/eric_decoder/build/
+*.pdf
+*.txt
+__pycache__
+.ipynb_checkpoints

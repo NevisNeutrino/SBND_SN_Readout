@@ -37,7 +37,7 @@ for crate, crate_df in merged_df.groupby("Crate #"):
         fem = row['FEM #']
         fem_ch = row['FEM ch #']
         slot = f"slot{fem + 2}"
-        threshold = row['threshold_1_delta']
+        threshold = row['threshold_2_delta']
         baseline = row['most_probable_adc']
 
         grouped_by_slot[slot].append((fem_ch, threshold, baseline))
@@ -50,7 +50,7 @@ for crate, crate_df in merged_df.groupby("Crate #"):
         for fem_ch, threshold, baseline in sorted(grouped_by_slot[slot]):
             lines.append(f"{slot}.ped{fem_ch} {baseline}")
 
-    filename = os.path.join(output_dir, f"crate{crate}new.txt")
+    filename = os.path.join(output_dir, f"crate{crate}_200mbps.txt")
     with open(filename, "w") as f:
         f.write("\n".join(lines))
     print(f"Wrote {filename}")

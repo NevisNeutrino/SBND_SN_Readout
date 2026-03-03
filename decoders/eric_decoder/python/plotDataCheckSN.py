@@ -39,31 +39,31 @@ if __name__ == "__main__":
 
     frameNums = getFrameNums(tree)
 
-    tasks = [
-        (getChannelStartMissSN, (tree, femBranches, femSlots), 'getChannelStartMissSN'),
-        (getROIMissCntSN, (tree, femBranches, femSlots), 'getROIMissCntSN'),
-        (getROICntAveSN, (tree, femBranches, femSlots), 'getROICntAveSN'),
-        (getROIBaselineAveSN, (tree, femBranches, femSlots), 'getROIBaselineAveSN'),
-        (getROIAmplAveSN, (tree, femBranches, femSlots), 'getROIAmplAveSN')
-    ]
+    # tasks = [
+    #     (getChannelStartMissSN, (tree, femBranches, femSlots), 'getChannelStartMissSN'),
+    #     (getROIMissCntSN, (tree, femBranches, femSlots), 'getROIMissCntSN'),
+    #     (getROICntAveSN, (tree, femBranches, femSlots), 'getROICntAveSN'),
+    #     (getROIBaselineAveSN, (tree, femBranches, femSlots), 'getROIBaselineAveSN'),
+    #     (getROIAmplAveSN, (tree, femBranches, femSlots), 'getROIAmplAveSN')
+    # ]
 
-    results = {}
+    # results = {}
 
-    with ProcessPoolExecutor() as executor:
-        futures = {
-            executor.submit(func, *args): task
-            for func, args, task in tasks
-        }
+    # with ProcessPoolExecutor() as executor:
+    #     futures = {
+    #         executor.submit(func, *args): task
+    #         for func, args, task in tasks
+    #     }
 
-        for future in futures:
-            future.result()
+    #     for future in futures:
+    #         future.result()
 
-        for future, task in futures.items():
-            try:
-                result = future.result()
-            except Exception as e:
-                result = f"Error: {e}"
-            results[task] = result
+    #     for future, task in futures.items():
+    #         try:
+    #             result = future.result()
+    #         except Exception as e:
+    #             result = f"Error: {e}"
+    #         results[task] = result
 
     plt.figure(figsize=(10, 6))
 
@@ -206,156 +206,144 @@ if __name__ == "__main__":
     if args.show: plt.show()
     plt.clf()
 
-    plt.figure(figsize=(12, 6))
+    # plt.figure(figsize=(12, 6))
 
-    femDict = getADCWordCnt(tree, 'SN', femBranches, femSlots)
-    slots = []
-    data = []
-    for slot, df in femDict.items():
-        slots.append(slot)
-        data.append(df[f"fem{slot}/adcCntDiff_"])
-    flatten = [diff for diffs in data for diff in diffs]
-    if len(flatten) == 0: flatten = [0]
-    low = int(min(flatten))
-    high = int(max(flatten))
-    bins = list(range(-3, 5))
-    labels = list(range(-3, 4))
-    if low < min(bins): bins.insert(0, low)
-    else: bins.insert(0, (min(bins)-1))
-    labels.insert(0, 'underflow')
-    if high > max(bins): bins.append(high)
-    else: bins.append((max(bins) + 1))
-    labels.append('overflow')
-    counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
-    edges = np.arange(len(bins))
-    bottoms = np.zeros_like(counts[0])
-    for slot, cnt in zip(slots, counts):
-        plt.bar(edges[:-1], cnt, width=1, align='edge', edgecolor='black', bottom=bottoms, label=f"FEM {slot}")
-        bottoms += cnt
-    centers = (edges[:-1] + edges[1:]) / 2
-    for x, y in zip(centers, bottoms):
-        plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=16)
-    plt.ylim(top=(max(bottoms) * 1.1))
-    #plt.yscale('symlog')
-    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: ADC Word Count Difference")
-    plt.xticks(centers, labels)
-    plt.xlabel("ADC word count difference")
-    plt.ylabel("Number of packet frames")
-    plt.grid(True)
-    plt.legend()
-    plt.tight_layout()
-    if args.save: 
-        fpdf.savefig()
-        print("Plot saved: ADC Word Count Difference Metric")
-    if args.show: plt.show()
-    plt.clf()
+    # femDict = getADCWordCnt(tree, 'SN', femBranches, femSlots)
+    # slots = []
+    # data = []
+    # for slot, df in femDict.items():
+    #     slots.append(slot)
+    #     data.append(df[f"fem{slot}/adcCntDiff_"])
+    # flatten = [diff for diffs in data for diff in diffs]
+    # if len(flatten) == 0: bins = 1
+    # else: 
+    #     bins = [((min(flatten) // 100) * 100), -10]
+    #     bins.extend(range(-9, (max(flatten) + 2)))
+    # counts = np.array([np.histogram(fem, bins=bins)[0] for fem in data])
+    # edges = np.arange(len(bins))
+    # bottoms = np.zeros_like(counts[0])
+    # for slot, cnt in zip(slots, counts):
+    #     plt.bar(edges[:-1], cnt, width=1, align='edge', edgecolor='black', bottom=bottoms, label=f"FEM {slot}")
+    #     bottoms += cnt
+    # centers = (edges[:-1] + edges[1:]) / 2
+    # for x, y in zip(centers, bottoms):
+    #     plt.text(x, y, str(int(y)), ha='center', va='bottom', fontweight='bold', fontsize=16)
+    # plt.ylim(top=(max(bottoms) * 1.1))
+    # #plt.yscale('symlog')
+    # plt.title("ADC Word Count Difference Metric")
+    # plt.xticks(edges, bins)
+    # plt.xlabel("ADC word count difference")
+    # plt.ylabel("Number of frames")
+    # plt.grid(True)
+    # plt.legend()
+    # plt.tight_layout()
+    # if args.save: 
+    #     fpdf.savefig()
+    #     print("Plot saved: ADC Word Count Difference Metric")
+    # if args.show: plt.show()
+    # plt.clf()
 
-    plt.figure(figsize=(18, 6))
-    cmap = plt.cm.viridis
-    cmap.set_bad(color='white')
+    # plt.figure(figsize=(18, 6))
 
-    chStartMissDict = results['getChannelStartMissSN']
-    data = np.array([
-        [len(chStartMissDict[x][y]) if x in chStartMissDict and y in chStartMissDict[x] else 0 for x in femSlots]
-        for y in chNums
-    ])
-    data = np.ma.masked_less(data, 1)
-    plt.imshow(data.T, cmap=cmap, vmin=0, aspect='auto')
-    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Channel Start Miss")
-    plt.xticks(ticks=chNums, labels=chNums)
-    plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
-    plt.xlabel("Channel number")
-    plt.ylabel("FEM slot")
-    plt.colorbar(label="Frequency")
-    plt.tight_layout()
-    if args.save: 
-        fpdf.savefig()
-        print("Plot saved: Channel Start Miss Metric")
-    if args.show: plt.show()
-    plt.clf()
+    # chStartMissDict = results['getChannelStartMissSN']
+    # data = np.array([
+    #     [len(chStartMissDict[x][y]) if y in chStartMissDict[x] else 0 for x in femSlots]
+    #     for y in chNums
+    # ])
+    # plt.imshow(data.T, cmap='viridis', aspect='auto')
+    # plt.title("Channel Start Miss Metric")
+    # plt.xticks(ticks=chNums, labels=chNums)
+    # plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
+    # plt.xlabel("Channel number")
+    # plt.ylabel("FEM slot")
+    # plt.colorbar(label="Number of frames")
+    # plt.tight_layout()
+    # if args.save: 
+    #     fpdf.savefig()
+    #     print("Plot saved: Channel Start Miss Metric")
+    # if args.show: plt.show()
+    # plt.clf()
 
-    roiStartMissCntDict, roiEndMissCntDict = results['getROIMissCntSN']
-    data = np.array([
-        [len(roiStartMissCntDict[x][y]) if x in roiStartMissCntDict and y in roiStartMissCntDict[x] else 0 for x in femSlots]
-        for y in chNums
-    ])
-    data = np.ma.masked_less(data, 1)
-    plt.imshow(data.T, cmap=cmap, vmin=0, aspect='auto')
-    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: ROI Start Miss")
-    plt.xticks(ticks=chNums, labels=chNums)
-    plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
-    plt.xlabel("Channel number")
-    plt.ylabel("FEM slot")
-    plt.colorbar(label="Number of missed ROI starts")
-    plt.tight_layout()
-    if args.save: 
-        fpdf.savefig()
-        print("Plot saved: ROI Start Miss Metric")
-    if args.show: plt.show()
-    plt.clf()
-    data = np.array([
-        [len(roiEndMissCntDict[x][y]) if x in roiEndMissCntDict and y in roiEndMissCntDict[x] else 0 for x in femSlots]
-        for y in chNums
-    ])
-    data = np.ma.masked_less(data, 1)
-    plt.imshow(data.T, cmap=cmap, vmin=0, aspect='auto')
-    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: ROI End Miss")
-    plt.xticks(ticks=chNums, labels=chNums)
-    plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
-    plt.xlabel("Channel number")
-    plt.ylabel("FEM slot")
-    plt.colorbar(label="Number of missed ROI ends")
-    plt.tight_layout()
-    if args.save: 
-        fpdf.savefig()
-        print("Plot saved: ROI End Miss Metric")
-    if args.show: plt.show()
-    plt.clf()
+    # roiStartMissCntDict, roiEndMissCntDict = results['getROIMissCntSN']
+    # data = np.array([
+    #     [len(roiStartMissCntDict[x][y]) if y in roiStartMissCntDict[x] else 0 for x in femSlots]
+    #     for y in chNums
+    # ])
+    # plt.imshow(data.T, cmap='viridis', aspect='auto')
+    # plt.title("ROI Start Miss Metric")
+    # plt.xticks(ticks=chNums, labels=chNums)
+    # plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
+    # plt.xlabel("Channel number")
+    # plt.ylabel("FEM slot")
+    # plt.colorbar(label="Number of ROIs")
+    # plt.tight_layout()
+    # if args.save: 
+    #     fpdf.savefig()
+    #     print("Plot saved: ROI Start Miss Metric")
+    # if args.show: plt.show()
+    # plt.clf()
+    # data = np.array([
+    #     [len(roiEndMissCntDict[x][y]) if y in roiEndMissCntDict[x] else 0 for x in femSlots]
+    #     for y in chNums
+    # ])
+    # plt.imshow(data.T, cmap='viridis', aspect='auto')
+    # plt.title("ROI End Miss Metric")
+    # plt.xticks(ticks=chNums, labels=chNums)
+    # plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
+    # plt.xlabel("Channel number")
+    # plt.ylabel("FEM slot")
+    # plt.colorbar(label="Number of ROIs")
+    # plt.tight_layout()
+    # if args.save: 
+    #     fpdf.savefig()
+    #     print("Plot saved: ROI End Miss Metric")
+    # if args.show: plt.show()
+    # plt.clf()
 
-    dfROI = results['getROICntAveSN']
-    plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
-    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Average Number of ROIs")
-    plt.xticks(ticks=chNums, labels=chNums)
-    plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
-    plt.xlabel("Channel number")
-    plt.ylabel("FEM slot")
-    plt.colorbar(label="Number of ROIs per packet frame")
-    plt.tight_layout()
-    if args.save: 
-        fpdf.savefig()
-        print("Plot saved: Average Number of ROIs Metric")
-    if args.show: plt.show()
-    plt.clf()
+    # dfROI = results['getROICntAveSN']
+    # plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
+    # plt.title("Average Number of ROIs Metric")
+    # plt.xticks(ticks=chNums, labels=chNums)
+    # plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
+    # plt.xlabel("Channel number")
+    # plt.ylabel("FEM slot")
+    # plt.colorbar(label="Average number of ROIs")
+    # plt.tight_layout()
+    # if args.save: 
+    #     fpdf.savefig()
+    #     print("Plot saved: Average Number of ROIs Metric")
+    # if args.show: plt.show()
+    # plt.clf()
 
-    dfROI = results['getROIBaselineAveSN']
-    plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
-    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Average ROI Baseline")
-    plt.xticks(ticks=chNums, labels=chNums)
-    plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
-    plt.xlabel("Channel number")
-    plt.ylabel("FEM slot")
-    plt.colorbar(label="Average ROI baseline (ADC counts)")
-    plt.tight_layout()
-    if args.save: 
-        fpdf.savefig()
-        print("Plot saved: Average ROI Baseline Metric")
-    if args.show: plt.show()
-    plt.clf()
+    # dfROI = results['getROIBaselineAveSN']
+    # plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
+    # plt.title("Average ROI Baseline Metric")
+    # plt.xticks(ticks=chNums, labels=chNums)
+    # plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
+    # plt.xlabel("Channel number")
+    # plt.ylabel("FEM slot")
+    # plt.colorbar(label="Average ROI baseline")
+    # plt.tight_layout()
+    # if args.save: 
+    #     fpdf.savefig()
+    #     print("Plot saved: Average ROI Baseline Metric")
+    # if args.show: plt.show()
+    # plt.clf()
 
-    dfROI = results['getROIAmplAveSN']
-    plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
-    plt.title(f"Run: {run}, Subfile: {subfile}, TPC Crate: {tpc}, Metric: Average ROI Amplitude")
-    plt.xticks(ticks=chNums, labels=chNums)
-    plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
-    plt.xlabel("Channel number")
-    plt.ylabel("FEM slot")
-    plt.colorbar(label="Average ROI amplitude (ADC counts)")
-    plt.tight_layout()
-    if args.save: 
-        fpdf.savefig()
-        print("Plot saved: Average ROI Amplitude Metric")
-    if args.show: plt.show()
-    plt.clf()
+    # dfROI = results['getROIAmplAveSN']
+    # plt.imshow(dfROI.T, cmap='viridis', aspect='auto')
+    # plt.title("Average ROI Amplitude Metric")
+    # plt.xticks(ticks=chNums, labels=chNums)
+    # plt.yticks(ticks=np.arange(len(femSlots)), labels=femSlots)
+    # plt.xlabel("Channel number")
+    # plt.ylabel("FEM slot")
+    # plt.colorbar(label="Average ROI amplitude")
+    # plt.tight_layout()
+    # if args.save: 
+    #     fpdf.savefig()
+    #     print("Plot saved: Average ROI Amplitude Metric")
+    # if args.show: plt.show()
+    # plt.clf()
 
     plt.close()
     if args.save: fpdf.close()
