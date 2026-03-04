@@ -2,6 +2,13 @@
 ## SN Data Content and Write Performance Validation
 
 ---
+## Setup: External Trigger
+External Trigger needs to be setup to take SN run while beam trigger is off. In-person work at ND is required to use PPS signal as external trigger.
+
+**Estimated Time**  
+~10 minutes
+
+---
 
 ## Test 1: Verify SN `.dat` File Content (Metadata-Only Check)
 
