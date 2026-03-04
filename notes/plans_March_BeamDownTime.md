@@ -63,3 +63,7 @@ Confirm whether SN `.dat` files contain only metadata (no waveform payload) when
 - Notes on reproducibility.
 
 ---
+
+### Previous Documentation
+https://dbweb2.fnal.gov:8443/ECL/sbnd/E/show?e=25265: Pictures for setup with external trigger. Note that this is using Function generator instead of PPS.
+https://dbweb2.fnal.gov:8443/ECL/sbnd/E/show?e=26319
